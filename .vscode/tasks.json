@@ -38,7 +38,7 @@
                 "lex.yy.c",
                 "kkk.tab.c",
                 "-o",
-                "kkk"
+                "./output/kkk"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -65,7 +65,7 @@
         {
             "type": "shell",
             "label": "Run: Use testfile",
-            "command": "./kkk",
+            "command": "./output/kkk",
             "args": [
                 "<testfile.txt",
                 "2>debug.txt"
@@ -79,7 +79,7 @@
         {
             "type": "shell",
             "label": "Run: Use testfile [Debug]",
-            "command": "./kkk",
+            "command": "./output/kkk",
             "args": [
                 "-d",
                 "<testfile.txt",
@@ -96,7 +96,7 @@
         {
             "type": "shell",
             "label": "Build & Compile & Instant Run",
-            "command": "./kkk",
+            "command": "./output/kkk",
             "options": {
                 "cwd": "${workspaceFolder}"
             },

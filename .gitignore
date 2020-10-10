@@ -2,3 +2,4 @@
 *.tab.h
 *.yy.c
 debug.txt
+/output
