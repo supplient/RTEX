@@ -1,0 +1,112 @@
+{
+    "tasks": [
+        // Build & Compile
+        {
+            "type": "shell",
+            "label": "Build Lex",
+            "command": "flex",
+            "args": [
+                "--debug",
+                "kkk.l"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "Build Bison",
+            "command": "bison",
+            "args": [
+                "-t",
+                "-d",
+                "kkk.y"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "Compile",
+            "command": "gcc",
+            "args": [
+                "lex.yy.c",
+                "kkk.tab.c",
+                "-o",
+                "kkk"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "Build & Compile",
+            "command": "echo Done",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+            ],
+            "dependsOn": [
+                "Build Lex", "Build Bison", "Compile"
+            ],
+            "dependsOrder": "sequence"
+        },
+
+        // Test
+        {
+            "type": "shell",
+            "label": "Run: Use testfile",
+            "command": "./kkk",
+            "args": [
+                "<testfile.txt",
+                "2>debug.txt"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+            ]
+        },
+        {
+            "type": "shell",
+            "label": "Run: Use testfile [Debug]",
+            "command": "./kkk",
+            "args": [
+                "-d",
+                "<testfile.txt",
+                "2>debug.txt"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+            ]
+        },
+
+        // One command do all
+        {
+            "type": "shell",
+            "label": "Build & Compile & Instant Run",
+            "command": "./kkk",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+            ],
+            "dependsOn": [
+                "Build & Compile"
+            ],
+            "dependsOrder": "sequence"
+        }
+    ],
+    "version": "2.0.0"
+}

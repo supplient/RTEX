@@ -1,0 +1,2 @@
+draw circle 0,2
+move to 0,1
