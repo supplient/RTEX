@@ -1,5 +1,9 @@
 *.tab.c
 *.tab.h
 *.yy.c
+*.tab.cc
+*.tab.hh
+*.yy.cc
+stack.hh
 debug.txt
 /output

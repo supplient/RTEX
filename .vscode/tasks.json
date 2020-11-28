@@ -1,19 +1,17 @@
 {
     "tasks": [
-        // Build & Compile
         {
             "type": "shell",
             "label": "Build Lex",
             "command": "flex",
             "args": [
                 "--debug",
-                "kkk.l"
+                "rtex.l"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "problemMatcher": [
-            ]
+            "problemMatcher": []
         },
         {
             "type": "shell",
@@ -22,29 +20,27 @@
             "args": [
                 "-t",
                 "-d",
-                "kkk.y"
+                "rtex.y"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "problemMatcher": [
-            ]
+            "problemMatcher": []
         },
         {
             "type": "shell",
             "label": "Compile",
-            "command": "gcc",
+            "command": "g++",
             "args": [
-                "lex.yy.c",
-                "kkk.tab.c",
+                "lex.yy.cc",
+                "rtex.tab.cc",
                 "-o",
-                "./output/kkk"
+                "./output/rtex"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "problemMatcher": [
-            ]
+            "problemMatcher": []
         },
         {
             "type": "shell",
@@ -53,19 +49,18 @@
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "problemMatcher": [
-            ],
+            "problemMatcher": [],
             "dependsOn": [
-                "Build Lex", "Build Bison", "Compile"
+                "Build Lex",
+                "Build Bison",
+                "Compile"
             ],
             "dependsOrder": "sequence"
         },
-
-        // Test
         {
             "type": "shell",
             "label": "Run: Use testfile",
-            "command": "./output/kkk",
+            "command": "./output/rtex",
             "args": [
                 "<testfile.txt",
                 "2>debug.txt"
@@ -73,13 +68,12 @@
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "problemMatcher": [
-            ]
+            "problemMatcher": []
         },
         {
             "type": "shell",
             "label": "Run: Use testfile [Debug]",
-            "command": "./output/kkk",
+            "command": "./output/rtex",
             "args": [
                 "-d",
                 "<testfile.txt",
@@ -88,20 +82,16 @@
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "problemMatcher": [
-            ]
+            "problemMatcher": []
         },
-
-        // One command do all
         {
             "type": "shell",
             "label": "Build & Compile & Instant Run",
-            "command": "./output/kkk",
+            "command": "./output/rtex",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
-            "problemMatcher": [
-            ],
+            "problemMatcher": [],
             "dependsOn": [
                 "Build & Compile"
             ],
