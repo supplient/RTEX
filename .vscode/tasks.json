@@ -6,7 +6,7 @@
             "command": "flex",
             "args": [
                 "--debug",
-                "rtex.l"
+                "scanner.l"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -18,9 +18,8 @@
             "label": "Build Bison",
             "command": "bison",
             "args": [
-                "-t",
                 "-d",
-                "rtex.y"
+                "parser.y"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -32,8 +31,11 @@
             "label": "Compile",
             "command": "g++",
             "args": [
+                "-g",
                 "lex.yy.cc",
-                "rtex.tab.cc",
+                "parser.tab.c",
+                "driver.cpp",
+                "main.cpp",
                 "-o",
                 "./output/rtex"
             ],

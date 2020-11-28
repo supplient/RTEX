@@ -4,6 +4,8 @@
 *.tab.cc
 *.tab.hh
 *.yy.cc
+location.hh
+position.hh
 stack.hh
 debug.txt
 /output
