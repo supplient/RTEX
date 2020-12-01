@@ -18,6 +18,8 @@
 {
   /*尽可能放在parser.cpp靠近头部的地方，与requires相似*/
   #include <iostream>
+  #include <algorithm>
+  #include "util.h"
   #include "scanner.h"
   #include "parser.tab.h"
   #include "driver.h"
@@ -71,6 +73,30 @@
 // %type <NumberList> number-sequence
 // %type <NumberList> subscript-dim
 // %type <Var&> var-expression
+
+%type <Bag<int>> phases
+%type <Bag<int>> phase
+%type <Bag<int>> type_phase
+%type <Bag<int>> assign_phase
+%type <Bag<int>> where_phase
+
+%type <Bag<int>> ellipsis_exp
+
+%type <Bag<int>> left_exp
+%type <Bag<int>> right_exp
+%type <Bag<int>> list_exp
+%type <Bag<int, vector<string>>> right_exp_list
+%type <Bag<int, vector<string>>> subscript_dim
+
+%type <Bag<int>> sum_exp
+%type <Bag<int>> subscript_cond
+%type <Bag<int>> superscript_cond
+
+%type <Bag<int>> if_exp
+%type <Bag<int, vector<string>>> if_exp_phases
+%type <Bag<int>> if_exp_phase
+
+%type <Bag<int>> bool_exp
  
  
 %start statements
@@ -81,74 +107,220 @@ statements: statement ";" statements
 ;
 
 statement: phases
+{
+    if(driver.outputMarkdown)
+        driver.out << "$$" << $1.s << "$$" << endl << endl;
+}
 ;
 
-phases: phases"#" phase
+phases: phase "#" phases
+{
+    $$.s = $1.s + " \\quad " + $3.s;
+}
 | phase
+{
+    $$.s = $1.s;
+}
 ;
 
-phase: type-phase
-| assign-phase
-| where-phase
+phase: type_phase
+{
+    $$.s = $1.s;
+}
+| assign_phase
+{
+    $$.s = $1.s;
+}
+| where_phase
+{
+    $$.s = $1.s;
+}
 ;
 
-type-phase: LET TYPE IDENTIFIER
-| LET TYPE IDENTIFIER subscript-dim
+type_phase: LET TYPE IDENTIFIER
+{
+    $$.s = $2 + " \\quad " + $3 + "";
+}
+| LET TYPE IDENTIFIER subscript_dim
+{
+    $$.s = $2 + " \\quad " + $3;
+    $$.s += string("_") + "{";
+    $$.s += Util::join($4.s, " \\times ");
+    $$.s += "}";
+}
 ;
 
-where-phase: WHERE IDENTIFIER "=" ellipsis-exp
+where_phase: WHERE IDENTIFIER "=" ellipsis_exp
+{
+    $$.s = $2 + " = " + $4.s;
+}
 ;
 
-ellipsis-exp: right-exp "," right-exp ELLIPSIS right-exp
+ellipsis_exp: right_exp "," right_exp ELLIPSIS right_exp
+{
+    $$.s = $1.s + "," + $3.s + "..." + $5.s;
+}
 ;
 
-assign-phase: left-exp "=" right-exp
+assign_phase: left_exp "=" right_exp
+{
+    $$.s = $1.s + " = " + $3.s;
+}
 ;
 
-left-exp: IDENTIFIER
-| IDENTIFIER subscript-dim
+left_exp: IDENTIFIER
+{
+    $$.s = $1;
+}
+| IDENTIFIER subscript_dim
+{
+    $$.s = $1 + "_{";
+    $$.s += Util::join($2.s, ",");
+    $$.s += "}";
+}
 ;
 
-right-exp: right-exp OPERATOR right-exp
-| BUILT_IN_FUNCTION "(" right-exp ")"
+right_exp: right_exp OPERATOR right_exp
+{
+    $$.s = $1.s + $2 + $3.s;
+}
+| BUILT_IN_FUNCTION "(" right_exp ")"
+{
+    $$.s = $1 + "(" + $3.s + ")";
+}
 | INTEGER
+{
+    $$.s = to_string($1);
+}
 | REAL
-| list-exp
-| sum-exp
-| if-exp
-| "(" right-exp ")"
-| left-exp
-| right-exp "^T"
+{
+    $$.s = to_string($1);
+}
+| list_exp
+{
+    $$.s = $1.s;
+}
+| sum_exp
+{
+    $$.s = $1.s;
+}
+| "(" if_exp ")"
+{
+    $$.s = $2.s;
+}
+| "(" right_exp ")"
+{
+    $$.s = "(" + $2.s + ")";
+}
+| left_exp
+{
+    $$.s = $1.s;
+}
+| right_exp "^T"
+{
+    $$.s = $1.s + "^T";
+}
 ;
 
-list-exp: "[" right-exp-list "]"
+list_exp: "[" right_exp_list "]"
+{
+    $$.s = "[" + Util::join($2.s, ",") + "]";
+}
+| "[" "(" INTEGER "," INTEGER ")" right_exp_list "]"
+{
+    $$.s = "\
+\\left[\n\
+\\begin{matrix}\n";
+
+    for(int i=0; i<$3; i++) {
+        for(int j=0; j<$5; j++) {
+            int li = i*$3 + j;
+            $$.s += "\t" + $7.s[li];
+            if(j != $5-1)
+                $$.s += " & ";
+        }
+        if(i != $3-1)
+            $$.s += " \\\\\n";
+    }
+
+    $$.s += "\n\
+\\end{matrix}\n\
+\\right]";
+}
 ;
 
-right-exp-list: right-exp "," right-exp-list
-| right-exp
+right_exp_list: right_exp "," right_exp_list
+{
+    $$.s = $3.s;
+    $$.s.insert($$.s.begin(), $1.s);
+}
+| right_exp
+{
+    $$.s = {$1.s};
+}
 ;
 
-sum-exp: SUM subscript-cond superscript-cond right-exp
+sum_exp: SUM subscript_cond superscript_cond right_exp
+{
+    $$.s = "\\sum" + $2.s + $3.s + " " + $4.s;
+}
 ;
 
-subscript-cond: "_" "{" assign-phase "}"
+subscript_cond: "_" "{" assign_phase "}"
+{
+    $$.s = "_{" + $3.s + "}";
+}
 ;
 
-superscript-cond: "^" "{" right-exp "}"
+superscript_cond: "^" "{" right_exp "}"
+{
+    $$.s = "^{" + $3.s + "}";
+}
 ;
 
-if-exp: if-exp-phase "#" if-exp
-| if-exp-phase
+if_exp: if_exp_phases
+{
+    $$.s = "\
+\\left\\{\n\
+\\begin{aligned}\n";
+    $$.s += Util::join($1.s, " \\\\\n", "\t");
+    $$.s += "\n\
+\\end{aligned}\n\
+\\right.";
+}
 ;
 
-if-exp-phase: right-exp "," IF bool-exp
-| right-exp "," ELSE
+if_exp_phases: if_exp_phase "#" if_exp_phases
+{
+    $$.s = $3.s;
+    $$.s.insert($$.s.begin(), $1.s);
+}
+| if_exp_phase
+{
+    $$.s = {$1.s};
+}
 ;
 
-bool-exp: right-exp OPERATOR right-exp
+if_exp_phase: right_exp "," IF bool_exp
+{
+    $$.s = $1.s + "&, if " + $4.s;
+}
+| right_exp "," ELSE
+{
+    $$.s = $1.s + "&, else";
+}
 ;
 
-subscript-dim: "_" "{" right-exp-list "}"
+bool_exp: right_exp OPERATOR right_exp
+{
+    $$.s = $1.s + $2 + $3.s;
+}
+;
+
+subscript_dim: "_" "{" right_exp_list "}"
+{
+    $$.s = $3.s;
+}
 ;
  
 %%
@@ -156,5 +328,8 @@ subscript-dim: "_" "{" right-exp-list "}"
 
 /*Parser实现错误处理接口*/
 void rtex::Parser::error(const rtex::location& location,const std::string& message){
-  std::cout<<"error happened at: "<<location<<std::endl;
+    cout
+        << "Error[" << location << "]: "
+        << message << endl
+        ;
 }

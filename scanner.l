@@ -33,6 +33,8 @@ ALPHA [a-z]|[A-Z]
 	loc.step();
 %}
 
+\n+		loc.lines(yyleng); loc.step();
+
 \_		return rtex::Parser::make_UNDERSCORE(loc);
 \{		return rtex::Parser::make_LEFT_BRACE(loc);
 \}		return rtex::Parser::make_RIGHT_BRACE(loc);
@@ -48,7 +50,7 @@ ALPHA [a-z]|[A-Z]
 \#		return rtex::Parser::make_WELL(loc);
 
 let		return rtex::Parser::make_LET(loc);
-sum		return rtex::Parser::make_SUM(loc);
+\\sum	return rtex::Parser::make_SUM(loc);
 \.\.\.  return rtex::Parser::make_ELLIPSIS(loc);
 if		return rtex::Parser::make_IF(loc);
 else    return rtex::Parser::make_ELSE(loc);
@@ -80,9 +82,13 @@ cos {
     return rtex::Parser::make_IDENTIFIER(string(yytext), loc);
 }
 
-[ ]+ /* Eat Blanks */
+[ ]+ 	  loc.step();/* Eat Blanks */
 
 <<EOF>>   return yyterminate();
+
+.	{
+	throw rtex::Parser::syntax_error(loc, "invalid character: " + string(yytext));
+}
 
 %%
 //这里可以放一些C或者C++代码
