@@ -36,6 +36,8 @@
                 "parser.tab.c",
                 "driver.cpp",
                 "main.cpp",
+                "basic_type.cpp",
+                "type.cpp",
                 "-o",
                 "./output/rtex"
             ],

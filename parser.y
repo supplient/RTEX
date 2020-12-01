@@ -74,19 +74,19 @@
 // %type <NumberList> subscript-dim
 // %type <Var&> var-expression
 
-%type <Bag<int>> phases
-%type <Bag<int>> phase
-%type <Bag<int>> type_phase
-%type <Bag<int>> assign_phase
-%type <Bag<int>> where_phase
+%type <Bag<vector<Phase>>> phases
+%type <Bag<Phase>> phase
+%type <Bag<Procedure>> type_phase
+%type <Bag<Procedure>> assign_phase
+%type <Bag<FuncForFunc>> where_phase
 
 %type <Bag<int>> ellipsis_exp
 
 %type <Bag<int>> left_exp
-%type <Bag<int>> right_exp
+%type <Bag<RightValueFunc>> right_exp
 %type <Bag<int>> list_exp
-%type <Bag<int, vector<string>>> right_exp_list
-%type <Bag<int, vector<string>>> subscript_dim
+%type <Bag<vector<RightValueFunc>, vector<string>>> right_exp_list
+%type <Bag<vector<RightValueFunc>, vector<string>>> subscript_dim
 
 %type <Bag<int>> sum_exp
 %type <Bag<int>> subscript_cond
@@ -110,36 +110,60 @@ statement: phases
 {
     if(driver.outputMarkdown)
         driver.out << "$$" << $1.s << "$$" << endl << endl;
+
+    driver.solve_statement($1.v);
+}
+| IDENTIFIER
+{
+    // DEBUG
+    driver.printVar(driver.gSymTbl[$1]);
+    driver.out << endl;
 }
 ;
 
 phases: phase "#" phases
 {
     $$.s = $1.s + " \\quad " + $3.s;
+
+    $$.v = $3.v;
+    $$.v.insert($$.v.begin(), $1.v);
 }
 | phase
 {
     $$.s = $1.s;
+
+    $$.v = {$1.v};
 }
 ;
 
 phase: type_phase
 {
     $$.s = $1.s;
+
+    $$.v.type = Phase::PROCEDURE;
+    $$.v.prod = $1.v;
 }
 | assign_phase
 {
     $$.s = $1.s;
+
+    $$.v.type = Phase::PROCEDURE;
+    $$.v.prod = $1.v;
 }
 | where_phase
 {
     $$.s = $1.s;
+
+    $$.v.type = Phase::FUNC_FOR_FUNC;
+    $$.v.fff = $1.v;
 }
 ;
 
 type_phase: LET TYPE IDENTIFIER
 {
     $$.s = $2 + " \\quad " + $3 + "";
+
+    $$.v = driver.solve_type_phase($2, $3);
 }
 | LET TYPE IDENTIFIER subscript_dim
 {
@@ -147,6 +171,8 @@ type_phase: LET TYPE IDENTIFIER
     $$.s += string("_") + "{";
     $$.s += Util::join($4.s, " \\times ");
     $$.s += "}";
+
+    $$.v = driver.solve_type_phase($2, $3, $4.v);
 }
 ;
 
@@ -183,18 +209,26 @@ left_exp: IDENTIFIER
 right_exp: right_exp OPERATOR right_exp
 {
     $$.s = $1.s + $2 + $3.s;
+
+    $$.v = driver.solve_right_exp_op($1.v, $3.v, $2);
 }
 | BUILT_IN_FUNCTION "(" right_exp ")"
 {
     $$.s = $1 + "(" + $3.s + ")";
+
+    $$.v = driver.solve_right_exp_func($3.v, $1);
 }
 | INTEGER
 {
     $$.s = to_string($1);
+
+    $$.v = driver.solve_right_exp_int($1);
 }
 | REAL
 {
     $$.s = to_string($1);
+
+    $$.v = driver.solve_right_exp_real($1);
 }
 | list_exp
 {
@@ -253,10 +287,15 @@ right_exp_list: right_exp "," right_exp_list
 {
     $$.s = $3.s;
     $$.s.insert($$.s.begin(), $1.s);
+
+    $$.v = $3.v;
+    $$.v.insert($$.v.begin(), $1.v);
 }
 | right_exp
 {
     $$.s = {$1.s};
+
+    $$.v = {$1.v};
 }
 ;
 
@@ -320,6 +359,8 @@ bool_exp: right_exp OPERATOR right_exp
 subscript_dim: "_" "{" right_exp_list "}"
 {
     $$.s = $3.s;
+
+    $$.v = $3.v;
 }
 ;
  

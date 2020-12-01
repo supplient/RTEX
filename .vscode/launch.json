@@ -5,7 +5,7 @@
       "name": "Debug",
       "type": "cppdbg",
       "request": "launch",
-      "program": "/home/supplient/flex/test/output/rtex",
+      "program": "/home/supplient/flex/rtex/output/rtex",
       "args": [
           "<testfile.txt",
           "2>debug.txt"
