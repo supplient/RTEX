@@ -10,49 +10,8 @@
 
 %code requires
 {
-	/*requires中的内容会放在YYLTYPE与YYSTPYPE定义前*/
-	#include <stdio.h>
-	#include <iostream>
-	#include <string>
-	#include <vector>
-	#include <stdint.h>
-	#include <cmath>
-
-    #define YYDEBUG 1
-
-	using namespace std;
-
-	/*避免包含头文件时冲突*/
-	namespace rtex {
-		class Scanner;
-		class Driver;
-	}
-
-	enum NUMBER_TYPE {
-		TYPE_REAL,
-		TYPE_INTEGER
-	};
-
-	struct NUMBER {
-        union {
-            double real;
-            int integer;
-        } value;
-		NUMBER_TYPE type;
-    };
-
-    typedef vector<NUMBER> NUMBER_LIST;
-
-    struct VAR {
-        union {
-            struct NUMBER num;
-            NUMBER_LIST list;
-        } value;
-        enum {
-            NUMBER,
-            LIST
-        } type;
-    };
+    /*requires中的内容会放在YYLTYPE与YYSTPYPE定义前*/
+    #include "parser.h"
 }
  
 %code top
@@ -94,106 +53,102 @@
 %token RIGHT_PARENTHESE     ")"
 %token LEFT_BRACKET         "["
 %token RIGHT_BRACKET        "]"
+%token TRANSPOSE            "^T"
 %token CARET                "^"
+%token WELL                 "#"
 
 %token EOF 0
-%token LINE_CHANGE LET SUM ELLIPSIS IF ELSE
+%token LINE_CHANGE LET SUM ELLIPSIS IF ELSE WHERE
 %token <string> TYPE
-%token <char> NUMBER_OPERATOR
+%token <string> OPERATOR
 %token <string> BUILT_IN_FUNCTION
 %token <double> REAL
 %token <int> INTEGER
 %token <string> IDENTIFIER
 
-%type <struct NUMBER> number-expression
-%type <struct NUMBER> one-character-var
-%type <NUMBER_LIST> number-sequence
-%type <NUMBER_LIST> subscript-dim
+// %type <Number> number-expression
+// %type <Var> one-character-var
+// %type <NumberList> number-sequence
+// %type <NumberList> subscript-dim
+// %type <Var&> var-expression
  
  
 %start statements
  
 %%
-statements: /* empty */
-| statements LINE_CHANGE statement
-| statement
+statements: statement ";" statements
+| statement ";"
 ;
 
-statement: type-statement
+statement: phases
 ;
 
-type-statement: LET TYPE IDENTIFIER
-{
-    cout << "let [TYPE](" << $2 << ") [IDENTIFIER](" << $3 << ")"  << endl;
-}
+phases: phases"#" phase
+| phase
+;
+
+phase: type-phase
+| assign-phase
+| where-phase
+;
+
+type-phase: LET TYPE IDENTIFIER
 | LET TYPE IDENTIFIER subscript-dim
-{
-    cout << "let [TYPE](" << $2 << ") [IDENTIFIER](" << $3 << ")_{";
-    for(int i=0; i<$4.size(); i++) {
-        if($4[i].type == NUMBER_TYPE::TYPE_INTEGER)
-            cout << $4[i].value.integer;
-        else
-            cout << $4[i].value.real;
-        if(i != $4.size()-1)
-            cout << ",";
-    }
-    cout << "}" << endl;
-}
 ;
 
-subscript-dim: "_" "{" number-sequence "}"
-{
-    $$ = $3;
-}
-| "_" one-character-var
-{ 
-    $$.push_back($2);
-}
+where-phase: WHERE IDENTIFIER "=" ellipsis-exp
 ;
 
-number-sequence: number-expression
-{
-    $$.push_back($1);
-}
-| number-sequence "," number-expression
-{
-    $$ = $1;
-    $$.push_back($3);
-}
+ellipsis-exp: right-exp "," right-exp ELLIPSIS right-exp
 ;
 
-one-character-var: INTEGER
-{
-    $$.type = NUMBER_TYPE::TYPE_INTEGER;
-    $$.value.integer = $1;
-}
+assign-phase: left-exp "=" right-exp
+;
+
+left-exp: IDENTIFIER
+| IDENTIFIER subscript-dim
+;
+
+right-exp: right-exp OPERATOR right-exp
+| BUILT_IN_FUNCTION "(" right-exp ")"
+| INTEGER
 | REAL
-{
-    $$.type = NUMBER_TYPE::TYPE_REAL;
-    $$.value.real = $1;
-}
-/*
-| IDENTIFIER
-*/
+| list-exp
+| sum-exp
+| if-exp
+| "(" right-exp ")"
+| left-exp
+| right-exp "^T"
 ;
 
-number-expression: INTEGER
-{
-    $$.type = NUMBER_TYPE::TYPE_INTEGER;
-    $$.value.integer = $1;
-}
-| REAL
-{
-    $$.type = NUMBER_TYPE::TYPE_REAL;
-    $$.value.real = $1;
-}
-/*
-| number-expression NUMBER_OPERATOR number-expression
-| BUILT_IN_FUNCTION "(" number-expression ")"
-| var-expression
-| list-expression
-| sum-expression
-*/
+list-exp: "[" right-exp-list "]"
+;
+
+right-exp-list: right-exp "," right-exp-list
+| right-exp
+;
+
+sum-exp: SUM subscript-cond superscript-cond right-exp
+;
+
+subscript-cond: "_" "{" assign-phase "}"
+;
+
+superscript-cond: "^" "{" right-exp "}"
+;
+
+if-exp: if-exp-phase "#" if-exp
+| if-exp-phase
+;
+
+if-exp-phase: right-exp "," IF bool-exp
+| right-exp "," ELSE
+;
+
+bool-exp: right-exp OPERATOR right-exp
+;
+
+subscript-dim: "_" "{" right-exp-list "}"
 ;
  
 %%

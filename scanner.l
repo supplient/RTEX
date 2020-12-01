@@ -33,12 +33,6 @@ ALPHA [a-z]|[A-Z]
 	loc.step();
 %}
 
-\n {
-    loc.lines(yyleng);
-    loc.step();
-    return rtex::Parser::make_LINE_CHANGE(loc);
-}
-
 \_		return rtex::Parser::make_UNDERSCORE(loc);
 \{		return rtex::Parser::make_LEFT_BRACE(loc);
 \}		return rtex::Parser::make_RIGHT_BRACE(loc);
@@ -49,21 +43,24 @@ ALPHA [a-z]|[A-Z]
 \)		return rtex::Parser::make_RIGHT_PARENTHESE(loc);
 \[		return rtex::Parser::make_LEFT_BRACKET(loc);
 \]		return rtex::Parser::make_RIGHT_BRACKET(loc);
+\^T		return rtex::Parser::make_TRANSPOSE(loc);
 \^		return rtex::Parser::make_CARET(loc);
+\#		return rtex::Parser::make_WELL(loc);
 
 let		return rtex::Parser::make_LET(loc);
 sum		return rtex::Parser::make_SUM(loc);
 \.\.\.  return rtex::Parser::make_ELLIPSIS(loc);
 if		return rtex::Parser::make_IF(loc);
 else    return rtex::Parser::make_ELSE(loc);
+where	return rtex::Parser::make_WHERE(loc);
 
 
 Matrix|Real|Integer {
     return rtex::Parser::make_TYPE(string(yytext), loc);
 }
 
-\+|\-|\*|\/ {
-    return rtex::Parser::make_NUMBER_OPERATOR(yytext[0], loc);
+\+|\-|\*|\/|\>|\<|\=\=|\!\=|\>\=|\<\= {
+    return rtex::Parser::make_OPERATOR(string(yytext), loc);
 }
 
 cos {
@@ -86,8 +83,6 @@ cos {
 [ ]+ /* Eat Blanks */
 
 <<EOF>>   return yyterminate();
-
-.        {cout<<"???"<<endl; loc.step();}
 
 %%
 //这里可以放一些C或者C++代码
