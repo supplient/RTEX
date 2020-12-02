@@ -88,9 +88,9 @@
 %type <Bag<vector<RightValueFunc>, vector<string>>> right_exp_list
 %type <Bag<vector<RightValueFunc>, vector<string>>> subscript_dim
 
-%type <Bag<int>> sum_exp
-%type <Bag<int>> subscript_cond
-%type <Bag<int>> superscript_cond
+%type <Bag<RightValueFunc>> sum_exp
+%type <Bag<pair<string, RightValueFunc>>> subscript_cond
+%type <Bag<RightValueFunc>> superscript_cond
 
 %type <Bag<RightValueFunc>> if_exp
 %type <Bag<vector<IfPair>, vector<string>>> if_exp_phases
@@ -249,6 +249,8 @@ right_exp: right_exp OPERATOR right_exp
 | sum_exp
 {
     $$.s = $1.s;
+
+    $$.v = $1.v;
 }
 | "(" if_exp ")"
 {
@@ -327,18 +329,24 @@ right_exp_list: right_exp "," right_exp_list
 sum_exp: SUM subscript_cond superscript_cond right_exp
 {
     $$.s = "\\sum" + $2.s + $3.s + " " + $4.s;
+
+    $$.v = driver.solve_sum_exp($2.v, $3.v, $4.v);
 }
 ;
 
-subscript_cond: "_" "{" assign_phase "}"
+subscript_cond: "_" "{" IDENTIFIER "=" right_exp "}"
 {
-    $$.s = "_{" + $3.s + "}";
+    $$.s = "_{" + $3 + "=" + $5.s + "}";
+
+    $$.v = driver.solve_subscript_cond($3, $5.v);
 }
 ;
 
 superscript_cond: "^" "{" right_exp "}"
 {
     $$.s = "^{" + $3.s + "}";
+
+    $$.v = $3.v;
 }
 ;
 

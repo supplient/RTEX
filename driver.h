@@ -11,6 +11,8 @@ namespace rtex {
 
     using namespace std;
 
+    RightValue rightValue_Cal_Helper(RightValue& a, RightValue& b, string op);
+
     template<class T, class U>
     bool solve_bool_exp_Compare_Helper(T a, U b, string op) {
         if(op == ">")
@@ -284,105 +286,8 @@ namespace rtex {
             return [af, bf, op, this](SymbolTable lSymTbl) {
                 RightValue a = af(lSymTbl);
                 RightValue b = bf(lSymTbl);
-                RightValue c;
 
-                auto REAL = RightValue::Type::REAL;
-                auto INTEGER = RightValue::Type::INTEGER;
-                auto MATRIX = RightValue::Type::MATRIX;
-                auto LIST = RightValue::Type::LIST;
-
-                if(a.type==REAL && b.type==REAL) {
-                    c.type = REAL;
-
-                    if(op == "+")
-                        c.realValue = a.realValue + b.realValue;
-                    else if(op == "-")
-                        c.realValue = a.realValue - b.realValue;
-                    else if(op == "*")
-                        c.realValue = a.realValue * b.realValue;
-                    else if(op == "/")
-                        c.realValue = a.realValue / b.realValue;
-                }
-                else if((a.type==REAL&&b.type==INTEGER) || (a.type==INTEGER&&b.type==REAL) ) {
-                    c.type = REAL;
-
-                    if(a.type != RightValue::Type::REAL)
-                        a.realValue = a.intValue;
-                    if(b.type != RightValue::Type::REAL)
-                        b.realValue = b.intValue;
-
-                    if(op == "+")
-                        c.realValue = a.realValue + b.realValue;
-                    else if(op == "-")
-                        c.realValue = a.realValue - b.realValue;
-                    else if(op == "*")
-                        c.realValue = a.realValue * b.realValue;
-                    else if(op == "/")
-                        c.realValue = a.realValue / b.realValue;
-                }
-                else if(a.type == INTEGER && b.type == INTEGER) {
-                    c.type = INTEGER;
-
-                    if(op == "+")
-                        c.intValue = a.intValue + b.intValue;
-                    else if(op == "-")
-                        c.intValue = a.intValue - b.intValue;
-                    else if(op == "*")
-                        c.intValue = a.intValue * b.intValue;
-                    else if(op == "/")
-                        c.intValue = a.intValue / b.intValue;
-                }
-                else if(a.type == MATRIX && b.type == MATRIX) {
-                    c.type = MATRIX;
-
-                    if(op == "+")
-                        c.matValue = a.matValue + b.matValue;
-                    else if(op == "-")
-                        c.matValue = a.matValue - b.matValue;
-                    else if(op == "*")
-                        c.matValue = a.matValue * b.matValue;
-                    else if(op == "/") 
-                        throw "Invalid divide for Matrix";
-                }
-                else if((a.type==MATRIX&&b.type==LIST) || (a.type==LIST&&b.type==MATRIX)) {
-                    c.type = MATRIX;
-
-                    if(a.type != MATRIX)
-                        a.matValue = a.listValue;
-                    if(b.type != MATRIX)
-                        b.matValue = b.listValue;
-
-                    if(op == "+")
-                        c.matValue = a.matValue + b.matValue;
-                    else if(op == "-")
-                        c.matValue = a.matValue - b.matValue;
-                    else if(op == "*")
-                        c.matValue = a.matValue * b.matValue;
-                    else if(op == "/") 
-                        throw "Invalid divide for Matrix";
-                }
-                else if(a.type == LIST && b.type == LIST) {
-                    c.type = LIST;
-
-                    if(a.listValue.size() != b.listValue.size())
-                        throw "List size not match.";
-
-                    c.listValue.resize(a.listValue.size());
-                    for(int k=0; k<a.listValue.size(); k++) {
-                        if(op == "+")
-                            c.listValue[k] = a.listValue[k] + b.listValue[k];
-                        else if(op == "-")
-                            c.listValue[k] = a.listValue[k] - b.listValue[k];
-                        else if(op == "*")
-                            c.listValue[k] = a.listValue[k] * b.listValue[k];
-                        else if(op == "/")
-                            c.listValue[k] = a.listValue[k] / b.listValue[k];
-                    }
-                }
-                else
-                    throw "Not supported now.";
-
-                return c;
+                return rightValue_Cal_Helper(a, b, op);
             };
         }
 
@@ -524,6 +429,41 @@ namespace rtex {
                 }
                 return res;
             };
+        }
+
+        RightValueFunc solve_sum_exp(pair<string, RightValueFunc> startCondF, RightValueFunc endCondF, RightValueFunc targetF) {
+            return [startCondF, endCondF, targetF, this](SymbolTable lSymTbl) {
+                string ctlVarName = startCondF.first;
+                RightValue startValue = startCondF.second(lSymTbl);
+                RightValue endValue = endCondF(lSymTbl);
+                if(startValue.type!=RightValue::Type::INTEGER || endValue.type!=RightValue::Type::INTEGER)
+                    throw "Only Integer can be the control value in sum-exp.";
+
+                Var var;
+                var.type = Var::Type::INTEGER;
+                var.id = intTbl.size();
+                intTbl.push_back(0);
+
+                lSymTbl[ctlVarName] = var;
+
+                auto REAL = RightValue::Type::REAL;
+                auto INTEGER = RightValue::Type::INTEGER;
+
+                RightValue sum;
+                sum.intValue = 0;
+                sum.type = RightValue::Type::INTEGER;
+                for(Integer i=startValue.intValue; i<=endValue.intValue; i++) {
+                    intTbl[var.id] = i;
+
+                    RightValue sub = targetF(lSymTbl);
+                    sum = rightValue_Cal_Helper(sum, sub, "+");
+                }
+                return sum;
+            };
+        }
+
+        pair<string,RightValueFunc> solve_subscript_cond(string varName, RightValueFunc rf) {
+            return {varName, rf};
         }
 
         RightValueFunc solve_if_exp(vector<IfPair>& ifPairs) {
