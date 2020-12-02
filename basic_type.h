@@ -25,6 +25,8 @@ namespace rtex {
 
     class Matrix {
     public:
+        Matrix() {}
+
         Matrix(int n):Matrix(n, n) {}
 
         Matrix(int n, int m):n(n), m(m) {
@@ -63,6 +65,17 @@ namespace rtex {
             a = b;
         }
 
+        Matrix(const std::vector<Real>& b) {
+            if(b.size() != n*m)
+                throw MatrixDimensionNotMatchError();
+            int k = 0;
+            for(int i=0; i<n; i++)
+            for(int j=0; j<m; j++) {
+                a[i][j] = b[k];
+                k++;
+            }
+        }
+
         Matrix(const Matrix& mat) {
             *this = mat.a;
             n = mat.n;
@@ -72,16 +85,19 @@ namespace rtex {
         int GetN()const { return n; }
         int GetM()const { return m; }
         void ResetN(int newN) {
-            n = newN;
+            ResetSize(newN, m);
         }
         void ResetM(int newM) {
-            m = newM;
+            ResetSize(n, newM);
         }
         void ResetSize(int newN, int newM=-1) {
-            ResetN(newN);
+            n = newN;
             if(newM == -1)
                 newM = newN;
-            ResetM(newM);
+            m = newM;
+            a.resize(n);
+            for(auto& row: a)
+                row.resize(m);
         }
 
         void SetIdentity(Real k=1) {
@@ -181,6 +197,32 @@ namespace rtex {
                 for(int k=0; k<m; k++)
                     sum += (*this)[i][k] * v[k][j];
                 res[i][j] = sum;
+            }
+            return res;
+        }
+
+        Matrix operator+(const Matrix& v) {
+            if(n != v.n || m != v.m)
+                throw MatrixDimensionNotMatchError();
+            Matrix res(*this);
+            for(auto pair: v) {
+                int i = pair.first;
+                int j = pair.second;
+
+                res[i][j] += v[i][j];
+            }
+            return res;
+        }
+
+        Matrix operator-(const Matrix& v) {
+            if(n != v.n || m != v.m)
+                throw MatrixDimensionNotMatchError();
+            Matrix res(*this);
+            for(auto pair: v) {
+                int i = pair.first;
+                int j = pair.second;
+
+                res[i][j] -= v[i][j];
             }
             return res;
         }

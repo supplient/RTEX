@@ -164,17 +164,28 @@ namespace rtex {
                     if(var.type == Var::Type::REAL) {
                         if(rv.type == RightValue::Type::INTEGER)
                             realTbl[var.id] = rv.intValue;
-                        else
+                        else if(rv.type == RightValue::Type::REAL)
                             realTbl[var.id] = rv.realValue;
+                        else
+                            throw "Type not match.";
                     }
                     else if(var.type == Var::Type::INTEGER) {
                         if(rv.type == RightValue::Type::INTEGER)
                             intTbl[var.id] = rv.intValue;
-                        else
+                        else if(rv.type == RightValue::Type::REAL)
                             intTbl[var.id] = Integer(rv.realValue);
+                        else
+                            throw "Type not match.";
+                        
                     }
-                    else
-                        throw "Matrix not supported now.";
+                    else if(var.type == Var::Type::MATRIX) {
+                        if(rv.type == RightValue::Type::MATRIX)
+                            matTbl[var.id] = rv.matValue;
+                        else if(rv.type == RightValue::Type::LIST)
+                            matTbl[var.id] = rv.listValue;
+                        else
+                            throw "left-exp is Matrix type, so right-exp must be Matrix or List";
+                    }
                 }
                 else {
                     Var var = searchVar(lv.varName, lSymTbl);
@@ -194,8 +205,10 @@ namespace rtex {
 
                     if(rv.type == RightValue::Type::INTEGER)
                         m[dims[0]][dims[1]] = rv.intValue;
-                    else
+                    else if(rv.type == RightValue::Type::REAL)
                         m[dims[0]][dims[1]] = rv.realValue;
+                    else
+                        throw "Type not match.";
                 }
             };
         }
@@ -273,27 +286,14 @@ namespace rtex {
                 RightValue b = bf(lSymTbl);
                 RightValue c;
 
-                if(a.type == b.type)
-                    c.type = a.type;
-                else {
-                    if(a.type != RightValue::Type::REAL)
-                        a.realValue = a.intValue;
-                    if(b.type != RightValue::Type::REAL)
-                        b.realValue = b.intValue;
-                    c.type = RightValue::Type::REAL;
-                }
+                auto REAL = RightValue::Type::REAL;
+                auto INTEGER = RightValue::Type::INTEGER;
+                auto MATRIX = RightValue::Type::MATRIX;
+                auto LIST = RightValue::Type::LIST;
 
-                if(c.type == RightValue::Type::INTEGER) {
-                    if(op == "+")
-                        c.intValue = a.intValue + b.intValue;
-                    else if(op == "-")
-                        c.intValue = a.intValue - b.intValue;
-                    else if(op == "*")
-                        c.intValue = a.intValue * b.intValue;
-                    else if(op == "/")
-                        c.intValue = a.intValue / b.intValue;
-                }
-                else {
+                if(a.type==REAL && b.type==REAL) {
+                    c.type = REAL;
+
                     if(op == "+")
                         c.realValue = a.realValue + b.realValue;
                     else if(op == "-")
@@ -303,6 +303,84 @@ namespace rtex {
                     else if(op == "/")
                         c.realValue = a.realValue / b.realValue;
                 }
+                else if((a.type==REAL&&b.type==INTEGER) || (a.type==INTEGER&&b.type==REAL) ) {
+                    c.type = REAL;
+
+                    if(a.type != RightValue::Type::REAL)
+                        a.realValue = a.intValue;
+                    if(b.type != RightValue::Type::REAL)
+                        b.realValue = b.intValue;
+
+                    if(op == "+")
+                        c.realValue = a.realValue + b.realValue;
+                    else if(op == "-")
+                        c.realValue = a.realValue - b.realValue;
+                    else if(op == "*")
+                        c.realValue = a.realValue * b.realValue;
+                    else if(op == "/")
+                        c.realValue = a.realValue / b.realValue;
+                }
+                else if(a.type == INTEGER && b.type == INTEGER) {
+                    c.type = INTEGER;
+
+                    if(op == "+")
+                        c.intValue = a.intValue + b.intValue;
+                    else if(op == "-")
+                        c.intValue = a.intValue - b.intValue;
+                    else if(op == "*")
+                        c.intValue = a.intValue * b.intValue;
+                    else if(op == "/")
+                        c.intValue = a.intValue / b.intValue;
+                }
+                else if(a.type == MATRIX && b.type == MATRIX) {
+                    c.type = MATRIX;
+
+                    if(op == "+")
+                        c.matValue = a.matValue + b.matValue;
+                    else if(op == "-")
+                        c.matValue = a.matValue - b.matValue;
+                    else if(op == "*")
+                        c.matValue = a.matValue * b.matValue;
+                    else if(op == "/") 
+                        throw "Invalid divide for Matrix";
+                }
+                else if((a.type==MATRIX&&b.type==LIST) || (a.type==LIST&&b.type==MATRIX)) {
+                    c.type = MATRIX;
+
+                    if(a.type != MATRIX)
+                        a.matValue = a.listValue;
+                    if(b.type != MATRIX)
+                        b.matValue = b.listValue;
+
+                    if(op == "+")
+                        c.matValue = a.matValue + b.matValue;
+                    else if(op == "-")
+                        c.matValue = a.matValue - b.matValue;
+                    else if(op == "*")
+                        c.matValue = a.matValue * b.matValue;
+                    else if(op == "/") 
+                        throw "Invalid divide for Matrix";
+                }
+                else if(a.type == LIST && b.type == LIST) {
+                    c.type = LIST;
+
+                    if(a.listValue.size() != b.listValue.size())
+                        throw "List size not match.";
+
+                    c.listValue.resize(a.listValue.size());
+                    for(int k=0; k<a.listValue.size(); k++) {
+                        if(op == "+")
+                            c.listValue[k] = a.listValue[k] + b.listValue[k];
+                        else if(op == "-")
+                            c.listValue[k] = a.listValue[k] - b.listValue[k];
+                        else if(op == "*")
+                            c.listValue[k] = a.listValue[k] * b.listValue[k];
+                        else if(op == "/")
+                            c.listValue[k] = a.listValue[k] / b.listValue[k];
+                    }
+                }
+                else
+                    throw "Not supported now.";
 
                 return c;
             };
@@ -317,8 +395,10 @@ namespace rtex {
                     c.type = RightValue::Type::REAL;
                     if(a.type == RightValue::Type::INTEGER)
                         c.realValue = cos(a.intValue);
-                    else
+                    else if(a.type == RightValue::Type::REAL)
                         c.realValue = cos(a.realValue);
+                    else
+                        throw "Invalid type for cos";
                 }
                 return c;
             };
@@ -353,8 +433,11 @@ namespace rtex {
                         res.type = RightValue::Type::INTEGER;
                         res.intValue = intTbl[var.id];
                         break;
+                    case Var::Type::MATRIX:
+                        res.type = RightValue::Type::MATRIX;
+                        res.matValue = matTbl[var.id];
                     default:
-                        throw "Matrix not supported now.";
+                        throw "Error";
                         break;
                     }
                 }
@@ -376,6 +459,57 @@ namespace rtex {
 
                     res.type = RightValue::Type::REAL;
                     res.realValue = m[dims[0]][dims[1]];
+                }
+                return res;
+            };
+        }
+
+        RightValueFunc solve_list_exp_list(vector<RightValueFunc> fs) {
+            return [fs](SymbolTable lSymTbl) {
+                RightValue res;
+                res.type = RightValue::Type::LIST;
+                for(auto f: fs) {
+                    RightValue v = f(lSymTbl);
+                    switch (v.type)
+                    {
+                    case RightValue::Type::INTEGER:
+                        v.realValue = v.intValue;
+                    case RightValue::Type::REAL:
+                        res.listValue.push_back(v.realValue);
+                        break;
+                    default:
+                        throw "List cannot contain list or matrix.";
+                        break;
+                    }
+                }
+                return res;
+            };
+        }
+
+        RightValueFunc solve_list_exp_mat(Integer n, Integer m, vector<RightValueFunc> fs) {
+            return [n, m, fs](SymbolTable lSymTbl) {
+                RightValue res;
+                res.type = RightValue::Type::MATRIX;
+                res.matValue.ResetSize(n, m);
+
+                int k = 0;
+                for(auto f: fs) {
+                    int i = k / m;
+                    int j = k % m;
+                    k++;
+
+                    RightValue v = f(lSymTbl);
+                    switch (v.type)
+                    {
+                    case RightValue::Type::INTEGER:
+                        v.realValue = v.intValue;
+                    case RightValue::Type::REAL:
+                        res.matValue[i][j] = v.realValue;
+                        break;
+                    default:
+                        throw "Matrix cannot contain list or matrix.";
+                        break;
+                    }
                 }
                 return res;
             };
@@ -411,14 +545,19 @@ namespace rtex {
                 RightValue a = af(lSymTbl);
                 RightValue b = bf(lSymTbl);
 
-                if(a.type==RightValue::Type::REAL && b.type==RightValue::Type::REAL)
+                auto REAL = RightValue::Type::REAL;
+                auto INTEGER = RightValue::Type::INTEGER;
+
+                if(a.type==REAL && b.type==REAL)
                     return solve_bool_exp_Compare_Helper(a.realValue, b.realValue, op);
-                else if(a.type==RightValue::Type::INTEGER && b.type==RightValue::Type::REAL)
+                else if(a.type==INTEGER && b.type==REAL)
                     return solve_bool_exp_Compare_Helper(a.intValue, b.realValue, op);
-                else if(a.type==RightValue::Type::REAL && b.type==RightValue::Type::INTEGER)
+                else if(a.type==REAL && b.type==INTEGER)
                     return solve_bool_exp_Compare_Helper(a.realValue, b.intValue, op);
-                else
+                else if(a.type==INTEGER && b.type==INTEGER)
                     return solve_bool_exp_Compare_Helper(a.intValue, b.intValue, op);
+                else
+                    throw "Cannot compare between Matrix or List.";
             };
         }
 

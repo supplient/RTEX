@@ -84,7 +84,7 @@
 
 %type <Bag<LeftValueFunc>> left_exp
 %type <Bag<RightValueFunc>> right_exp
-%type <Bag<int>> list_exp
+%type <Bag<RightValueFunc>> list_exp
 %type <Bag<vector<RightValueFunc>, vector<string>>> right_exp_list
 %type <Bag<vector<RightValueFunc>, vector<string>>> subscript_dim
 
@@ -243,6 +243,8 @@ right_exp: right_exp OPERATOR right_exp
 | list_exp
 {
     $$.s = $1.s;
+
+    $$.v = $1.v;
 }
 | sum_exp
 {
@@ -275,6 +277,8 @@ right_exp: right_exp OPERATOR right_exp
 list_exp: "[" right_exp_list "]"
 {
     $$.s = "[" + Util::join($2.s, ",") + "]";
+
+    $$.v = driver.solve_list_exp_list($2.v);
 }
 | "[" "(" INTEGER "," INTEGER ")" right_exp_list "]"
 {
@@ -296,6 +300,9 @@ list_exp: "[" right_exp_list "]"
     $$.s += "\n\
 \\end{matrix}\n\
 \\right]";
+
+
+    $$.v = driver.solve_list_exp_mat($3, $5, $7.v);
 }
 ;
 

@@ -4,4 +4,10 @@ M_{i,j} = (
         i*j, else
     )
     #where i=0,1...9 #where j=0,1...19;
-M;
+
+let Matrix C_{2, 2};
+C = [(2,2)
+    3, 4,
+    1, 2
+];
+C;

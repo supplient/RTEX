@@ -66,12 +66,16 @@ namespace rtex {
     struct RightValue {
         enum Type {
             REAL,
-            INTEGER
+            INTEGER,
+            MATRIX,
+            LIST
         };
 
         Type type;
         Integer intValue;
         Real realValue;
+        Matrix matValue;
+        vector<Real> listValue;
     };
 
     struct LeftValue {
