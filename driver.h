@@ -436,6 +436,7 @@ namespace rtex {
                     case Var::Type::MATRIX:
                         res.type = RightValue::Type::MATRIX;
                         res.matValue = matTbl[var.id];
+                        break;
                     default:
                         throw "Error";
                         break;
@@ -461,6 +462,16 @@ namespace rtex {
                     res.realValue = m[dims[0]][dims[1]];
                 }
                 return res;
+            };
+        }
+
+        RightValueFunc solve_right_exp_transpose(RightValueFunc rf) {
+            return [rf](SymbolTable lSymTbl) {
+                RightValue rv = rf(lSymTbl);
+                if(rv.type != RightValue::Type::MATRIX)
+                    throw "Only matrix can transpose";
+                rv.matValue = rv.matValue.Transpose();
+                return rv;
             };
         }
 

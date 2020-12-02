@@ -271,6 +271,8 @@ right_exp: right_exp OPERATOR right_exp
 | right_exp "^T"
 {
     $$.s = $1.s + "^T";
+
+    $$.v = driver.solve_right_exp_transpose($1.v);
 }
 ;
 
