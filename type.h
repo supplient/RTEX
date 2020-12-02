@@ -16,6 +16,7 @@ namespace rtex {
     //
 
     class Var;
+    class LeftValue;
     class RightValue;
     
 
@@ -27,7 +28,11 @@ namespace rtex {
 
     typedef function<void(SymbolTable)> Procedure;
     typedef function<Procedure(Procedure)> FuncForFunc;
+    typedef function<LeftValue(SymbolTable)> LeftValueFunc;
     typedef function<RightValue(SymbolTable)> RightValueFunc;
+    typedef function<bool(SymbolTable)> BoolFunc;
+
+    typedef pair<RightValueFunc, BoolFunc> IfPair;
 
     template<class T, class U=string>
     struct Bag {
@@ -65,6 +70,17 @@ namespace rtex {
         Type type;
         Integer intValue;
         Real realValue;
+    };
+
+    struct LeftValue {
+        enum Type {
+            VAR,
+            MATRIX_ELE
+        };
+
+        Type type;
+        string varName;
+        vector<RightValueFunc> dimFuncs;
     };
 
     struct Phase {

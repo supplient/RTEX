@@ -82,7 +82,7 @@
 
 %type <Bag<int>> ellipsis_exp
 
-%type <Bag<int>> left_exp
+%type <Bag<LeftValueFunc>> left_exp
 %type <Bag<RightValueFunc>> right_exp
 %type <Bag<int>> list_exp
 %type <Bag<vector<RightValueFunc>, vector<string>>> right_exp_list
@@ -92,11 +92,11 @@
 %type <Bag<int>> subscript_cond
 %type <Bag<int>> superscript_cond
 
-%type <Bag<int>> if_exp
-%type <Bag<int, vector<string>>> if_exp_phases
-%type <Bag<int>> if_exp_phase
+%type <Bag<RightValueFunc>> if_exp
+%type <Bag<vector<IfPair>, vector<string>>> if_exp_phases
+%type <Bag<IfPair>> if_exp_phase
 
-%type <Bag<int>> bool_exp
+%type <Bag<BoolFunc>> bool_exp
  
  
 %start statements
@@ -191,18 +191,24 @@ ellipsis_exp: right_exp "," right_exp ELLIPSIS right_exp
 assign_phase: left_exp "=" right_exp
 {
     $$.s = $1.s + " = " + $3.s;
+
+    $$.v = driver.solve_assign_phase($1.v, $3.v);
 }
 ;
 
 left_exp: IDENTIFIER
 {
     $$.s = $1;
+
+    $$.v = driver.solve_left_exp_var($1);
 }
 | IDENTIFIER subscript_dim
 {
     $$.s = $1 + "_{";
     $$.s += Util::join($2.s, ",");
     $$.s += "}";
+
+    $$.v = driver.solve_left_exp_mat($1, $2.v);
 }
 ;
 
@@ -241,14 +247,20 @@ right_exp: right_exp OPERATOR right_exp
 | "(" if_exp ")"
 {
     $$.s = $2.s;
+
+    $$.v = $2.v;
 }
 | "(" right_exp ")"
 {
     $$.s = "(" + $2.s + ")";
+
+    $$.v = $2.v;
 }
 | left_exp
 {
     $$.s = $1.s;
+
+    $$.v = driver.solve_right_exp_from_left_exp($1.v);
 }
 | right_exp "^T"
 {
@@ -326,6 +338,8 @@ if_exp: if_exp_phases
     $$.s += "\n\
 \\end{aligned}\n\
 \\right.";
+
+    $$.v = driver.solve_if_exp($1.v);
 }
 ;
 
@@ -333,26 +347,37 @@ if_exp_phases: if_exp_phase "#" if_exp_phases
 {
     $$.s = $3.s;
     $$.s.insert($$.s.begin(), $1.s);
+
+    $$.v = $3.v;
+    $$.v.insert($$.v.begin(), $1.v);
 }
 | if_exp_phase
 {
     $$.s = {$1.s};
+
+    $$.v = {$1.v};
 }
 ;
 
 if_exp_phase: right_exp "," IF bool_exp
 {
     $$.s = $1.s + "&, if " + $4.s;
+
+    $$.v = driver.solve_if_exp_phase_if($1.v, $4.v);
 }
 | right_exp "," ELSE
 {
     $$.s = $1.s + "&, else";
+
+    $$.v = driver.solve_if_exp_phase_else($1.v);
 }
 ;
 
 bool_exp: right_exp OPERATOR right_exp
 {
     $$.s = $1.s + $2 + $3.s;
+
+    $$.v = driver.solve_bool_exp($1.v, $3.v, $2);
 }
 ;
 

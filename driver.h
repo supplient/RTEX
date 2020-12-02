@@ -11,6 +11,24 @@ namespace rtex {
 
     using namespace std;
 
+    template<class T, class U>
+    bool solve_bool_exp_Compare_Helper(T a, U b, string op) {
+        if(op == ">")
+            return a > b;
+        else if(op == "<")
+            return a < b;
+        else if(op == "==")
+            return a == b;
+        else if(op == "!=")
+            return a != b;
+        else if(op == ">=")
+            return a >= b;
+        else if(op == "<=")
+            return a <= b;
+        else
+            throw "Invalid bool opeartor.";
+    }
+
     class Driver {
         friend class Scanner;
         friend class Parser;
@@ -51,6 +69,13 @@ namespace rtex {
 
         SymbolTable gSymTbl;
 
+        Var searchVar(string& varName, SymbolTable& lSymTbl) {
+            if(lSymTbl.find(varName) != lSymTbl.end())
+                return lSymTbl[varName];
+            else if(gSymTbl.find(varName) != gSymTbl.end())
+                return gSymTbl[varName];
+            throw "Undefined identifier";
+        }
 
         void solve_statement(vector<Phase> phases) {
             vector<Procedure> prods;
@@ -129,6 +154,71 @@ namespace rtex {
             };
         }
 
+        Procedure solve_assign_phase(LeftValueFunc leftValueFunc, RightValueFunc rightValueFunc) {
+            return [leftValueFunc, rightValueFunc, this](SymbolTable lSymTbl) {
+                LeftValue lv = leftValueFunc(lSymTbl);
+                RightValue rv = rightValueFunc(lSymTbl);
+
+                if(lv.type == LeftValue::Type::VAR) {
+                    Var var = searchVar(lv.varName, lSymTbl);
+                    if(var.type == Var::Type::REAL) {
+                        if(rv.type == RightValue::Type::INTEGER)
+                            realTbl[var.id] = rv.intValue;
+                        else
+                            realTbl[var.id] = rv.realValue;
+                    }
+                    else if(var.type == Var::Type::INTEGER) {
+                        if(rv.type == RightValue::Type::INTEGER)
+                            intTbl[var.id] = rv.intValue;
+                        else
+                            intTbl[var.id] = Integer(rv.realValue);
+                    }
+                    else
+                        throw "Matrix not supported now.";
+                }
+                else {
+                    Var var = searchVar(lv.varName, lSymTbl);
+                    if(var.type != Var::Type::MATRIX)
+                        throw "Only Matrix can be referred by dims";
+                    Matrix& m = matTbl[var.id];
+                    
+                    vector<Integer> dims;
+                    for(auto f: lv.dimFuncs) {
+                        RightValue rv = f(lSymTbl);
+                        if(rv.type != RightValue::INTEGER)
+                            throw "Dim must be Integer.";
+                        dims.push_back(rv.intValue);
+                    }
+                    if(dims.size() != 2)
+                        throw "Matrix must be two-dims";
+
+                    if(rv.type == RightValue::Type::INTEGER)
+                        m[dims[0]][dims[1]] = rv.intValue;
+                    else
+                        m[dims[0]][dims[1]] = rv.realValue;
+                }
+            };
+        }
+
+        LeftValueFunc solve_left_exp_var(string& varName) {
+            return [varName](SymbolTable lSymTbl) {
+                LeftValue res;
+                res.type = LeftValue::Type::VAR;
+                res.varName = varName;
+                return res;
+            };
+        }
+
+        LeftValueFunc solve_left_exp_mat(string& varName, vector<RightValueFunc> dimFuncs) {
+            return [varName, dimFuncs](SymbolTable lSymTbl) {
+                LeftValue res;
+                res.type = LeftValue::Type::MATRIX_ELE;
+                res.varName = varName;
+                res.dimFuncs = dimFuncs;
+                return res;
+            };
+        }
+
         RightValueFunc solve_right_exp_op(RightValueFunc af, RightValueFunc bf, string& op) {
             return [af, bf, &op, this](SymbolTable lSymTbl) {
                 RightValue a = af(lSymTbl);
@@ -198,6 +288,91 @@ namespace rtex {
             };
         }
 
+        RightValueFunc solve_right_exp_from_left_exp(LeftValueFunc leftExpFunc) {
+            return [leftExpFunc, this](SymbolTable lSymTbl) {
+                LeftValue v = leftExpFunc(lSymTbl);
+                RightValue res;
+
+                if(v.type == LeftValue::Type::VAR) {
+                    Var var = searchVar(v.varName, lSymTbl);
+                    switch (var.type)
+                    {
+                    case Var::Type::REAL:
+                        res.type = RightValue::Type::REAL;
+                        res.realValue = realTbl[var.id];
+                        break;
+                    case Var::Type::INTEGER:
+                        res.type = RightValue::Type::INTEGER;
+                        res.intValue = intTbl[var.id];
+                        break;
+                    default:
+                        throw "Matrix not supported now.";
+                        break;
+                    }
+                }
+                else {
+                    Var var = searchVar(v.varName, lSymTbl);
+                    if(var.type != Var::Type::MATRIX)
+                        throw "Can only refer dims for matrix";
+                    Matrix& m = matTbl[var.id];
+
+                    vector<Integer> dims;
+                    for(auto f: v.dimFuncs) {
+                        RightValue rv = f(lSymTbl);
+                        if(rv.type != RightValue::INTEGER)
+                            throw "Dim must be Integer.";
+                        dims.push_back(rv.intValue);
+                    }
+                    if(dims.size() != 2)
+                        throw "Matrix must be two-dims";
+
+                    res.type = RightValue::Type::REAL;
+                    res.realValue = m[dims[0]][dims[1]];
+                }
+                return res;
+            };
+        }
+
+        RightValueFunc solve_if_exp(vector<IfPair>& ifPairs) {
+            return [ifPairs](SymbolTable lSymTbl)->RightValue {
+                for(const IfPair& p: ifPairs) {
+                    const BoolFunc& bf = p.second;
+                    if(bf(lSymTbl))
+                        return p.first(lSymTbl);
+                }
+                throw "if-exp has no valid value, add else-exp-phase please.";
+            };
+        }
+
+        IfPair solve_if_exp_phase_if(RightValueFunc rightValueFunc, BoolFunc boolFunc) {
+            IfPair res;
+            res.first = rightValueFunc;
+            res.second = boolFunc;
+            return res;
+        }
+
+        IfPair solve_if_exp_phase_else(RightValueFunc rightValueFunc) {
+            IfPair res;
+            res.first = rightValueFunc;
+            res.second = [](SymbolTable lSymTbl) { return true; };
+            return res;
+        }
+
+        BoolFunc solve_bool_exp(RightValueFunc af, RightValueFunc bf, string op) {
+            return [af, bf, op](SymbolTable lSymTbl) {
+                RightValue a = af(lSymTbl);
+                RightValue b = bf(lSymTbl);
+
+                if(a.type==RightValue::Type::REAL && b.type==RightValue::Type::REAL)
+                    return solve_bool_exp_Compare_Helper(a.realValue, b.realValue, op);
+                else if(a.type==RightValue::Type::INTEGER && b.type==RightValue::Type::REAL)
+                    return solve_bool_exp_Compare_Helper(a.intValue, b.realValue, op);
+                else if(a.type==RightValue::Type::REAL && b.type==RightValue::Type::INTEGER)
+                    return solve_bool_exp_Compare_Helper(a.realValue, b.intValue, op);
+                else
+                    return solve_bool_exp_Compare_Helper(a.intValue, b.intValue, op);
+            };
+        }
 
     };
 
