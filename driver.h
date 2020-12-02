@@ -45,23 +45,6 @@ namespace rtex {
         void setDebug(bool flag);
         virtual ~Driver ();
 
-        void printVar(const Var& v) {
-            switch (v.type)
-            {
-            case Var::Type::MATRIX:
-                out << matTbl[v.id];
-                break;
-            case Var::Type::INTEGER:
-                out << intTbl[v.id];
-                break;
-            case Var::Type::REAL:
-                out << realTbl[v.id];
-                break;
-            default:
-                break;
-            }
-        }
-
         ostream& out = cout;
         bool outputMarkdown = false;
 
@@ -107,6 +90,28 @@ namespace rtex {
             }
             for(int i=startI; i<prods.size(); i++)
                 prods[i]({});
+        }
+
+        void solve_statement_print(RightValueFunc rf) {
+            RightValue rv = rf({});
+            switch (rv.type)
+            {
+            case RightValue::Type::INTEGER:
+                out << rv.intValue;
+                break;
+            case RightValue::Type::REAL:
+                out << rv.realValue;
+                break;
+            case RightValue::Type::MATRIX:
+                out << rv.matValue;
+                break;
+            case RightValue::Type::LIST:
+                out << rv.listValue;
+                break;
+            default:
+                throw "Error";
+                break;
+            }
         }
 
         Procedure solve_type_phase(string& typeName, string& varName, vector<RightValueFunc> dimFuncs={}) {

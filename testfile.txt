@@ -1,17 +1,35 @@
 let Matrix M_{10, 20};
-M_{i,j} = (
-        i+j, if (i+j)<8 #
-        i*j, else
-    )
-    #where i=0,1...9 #where j=0,1...19;
+M_{i,j}=2*i+cos(j) #where i=0,1...9 #where j=0,1...19;
+let Matrix G_{10};
+G=M*(M^T);
 
-let Matrix C_{2, 2};
-C = [(2,2)
-    3, 4,
-    1, 2
-];
-C = C^T;
+G;
 
 let Real k;
-k = \sum_{i=1}^{3} i;
-k;
+k = M_{0, 1};
+let Real c;
+c = (
+    3, if k==2 #
+    1, else
+);
+M_{i,j} = (
+    2, if M_{i,j}>3 #
+    1, else
+    ) 
+    #where i=0,1...9
+    #where j=0,1...19
+;
+
+M;
+
+
+let Matrix C_{2};
+C = [(2,2)
+    2, 3,
+    1, 2
+];
+
+let Real s;
+s = \sum_{i=0}^{1} \sum_{j=0}^{1} C_{i, j};
+
+s;

@@ -113,10 +113,10 @@ statement: phases
 
     driver.solve_statement($1.v);
 }
-| IDENTIFIER
+| right_exp
 {
+    driver.solve_statement_print($1.v);
     // DEBUG
-    driver.printVar(driver.gSymTbl[$1]);
     driver.out << endl;
 }
 ;
