@@ -287,17 +287,21 @@ namespace rtex {
 
     template<class T>
     T& operator<<(T& out, const Matrix& m) {
+        out << "\
+\\left[\n\
+\\begin{matrix}\n";
         for(int i=0; i<m.n; i++) {
-            out << "[";
             for(int j=0; j<m.m; j++) {
-                out << m[i][j];
+                out << "\t" << m[i][j];
                 if(j != m.m-1)
-                    out << ", ";
+                    out << " & ";
             }
-            out << "]";
             if(i != m.n-1)
-                out << ",\n";
+                out << " \\\\\n";
         }
+        out << "\n\
+\\end{matrix}\n\
+\\right]";
 
         return out;
     }

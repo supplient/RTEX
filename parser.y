@@ -116,8 +116,6 @@ statement: phases
 | right_exp
 {
     driver.solve_statement_print($1.v);
-    // DEBUG
-    driver.out << endl;
 }
 ;
 

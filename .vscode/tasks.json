@@ -81,7 +81,7 @@
             "args": [
                 "-d",
                 "<testfile.txt",
-                // ">output.md",
+                ">./output/output.md",
                 "2>debug.txt"
             ],
             "options": {

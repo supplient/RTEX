@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+#include "util.h"
 #include "type.h"
 #include "scanner.h"
 #include "parser.tab.h"
@@ -46,7 +47,7 @@ namespace rtex {
         virtual ~Driver ();
 
         ostream& out = cout;
-        bool outputMarkdown = false;
+        bool outputMarkdown = true;
 
         vector<Matrix> matTbl;
         vector<Real> realTbl;
@@ -97,21 +98,28 @@ namespace rtex {
             switch (rv.type)
             {
             case RightValue::Type::INTEGER:
-                out << rv.intValue;
+                out << "$" << rv.intValue << "$";
                 break;
             case RightValue::Type::REAL:
-                out << rv.realValue;
+                out << "$" << rv.realValue << "$";
                 break;
             case RightValue::Type::MATRIX:
-                out << rv.matValue;
+                out << "$$" << rv.matValue << "$$";
                 break;
             case RightValue::Type::LIST:
-                out << rv.listValue;
+                out << "$[";
+                for(int i=0; i<rv.listValue.size(); i++) {
+                    out << rv.listValue[i];
+                    if(i != rv.listValue.size()-1)
+                        out << ",";
+                }
+                out << "]$";
                 break;
             default:
                 throw "Error";
                 break;
             }
+            out << endl << endl;
         }
 
         Procedure solve_type_phase(string& typeName, string& varName, vector<RightValueFunc> dimFuncs={}) {
