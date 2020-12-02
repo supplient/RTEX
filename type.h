@@ -18,6 +18,7 @@ namespace rtex {
     class Var;
     class LeftValue;
     class RightValue;
+    class LoopCondition;
     
 
     //
@@ -31,6 +32,7 @@ namespace rtex {
     typedef function<LeftValue(SymbolTable)> LeftValueFunc;
     typedef function<RightValue(SymbolTable)> RightValueFunc;
     typedef function<bool(SymbolTable)> BoolFunc;
+    typedef function<LoopCondition(SymbolTable)> LoopConditionFunc;
 
     typedef pair<RightValueFunc, BoolFunc> IfPair;
 
@@ -46,7 +48,7 @@ namespace rtex {
             REAL,
             INTEGER
         };
-        static Type str2type(string& s) {
+        static Type str2type(const string& s) {
             if(s=="Matrix")
                 return MATRIX;
             else if(s=="Real")
@@ -81,6 +83,12 @@ namespace rtex {
         Type type;
         string varName;
         vector<RightValueFunc> dimFuncs;
+    };
+
+    struct LoopCondition {
+        Integer start;
+        Integer step;
+        Integer end;
     };
 
     struct Phase {

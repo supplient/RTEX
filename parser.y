@@ -80,7 +80,7 @@
 %type <Bag<Procedure>> assign_phase
 %type <Bag<FuncForFunc>> where_phase
 
-%type <Bag<int>> ellipsis_exp
+%type <Bag<LoopConditionFunc>> ellipsis_exp
 
 %type <Bag<LeftValueFunc>> left_exp
 %type <Bag<RightValueFunc>> right_exp
@@ -179,12 +179,16 @@ type_phase: LET TYPE IDENTIFIER
 where_phase: WHERE IDENTIFIER "=" ellipsis_exp
 {
     $$.s = $2 + " = " + $4.s;
+
+    $$.v = driver.solve_where_phase($2, $4.v);
 }
 ;
 
 ellipsis_exp: right_exp "," right_exp ELLIPSIS right_exp
 {
     $$.s = $1.s + "," + $3.s + "..." + $5.s;
+
+    $$.v = driver.solve_ellipsis_exp($1.v, $3.v, $5.v);
 }
 ;
 

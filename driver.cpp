@@ -10,7 +10,14 @@ Driver::Driver():m_scanner(*this),m_parser(m_scanner,*this){
 
 int Driver::parse() {
     m_scanner.switch_streams(cin,cout);
-    return m_parser.parse();
+    int r;
+    try {
+        r = m_parser.parse();
+    }
+    catch(const char* s) {
+        cerr << s << endl;
+    }
+    return r;
 }
 
 void Driver::setDebug(bool flag) {

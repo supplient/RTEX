@@ -108,7 +108,7 @@ namespace rtex {
         }
 
         Procedure solve_type_phase(string& typeName, string& varName, vector<RightValueFunc> dimFuncs={}) {
-            return [&typeName, &varName, dimFuncs, this](SymbolTable lSymTbl) {
+            return [typeName, varName, dimFuncs, this](SymbolTable lSymTbl) {
                 // Determine type
                 Var::Type type = Var::str2type(typeName);
 
@@ -200,6 +200,54 @@ namespace rtex {
             };
         }
 
+        FuncForFunc solve_where_phase(string varName, LoopConditionFunc loopf) {
+            return [varName, loopf, this](Procedure proc) {
+                return [varName, loopf, proc, this](SymbolTable lSymTbl) {
+                    // Cal loop condition
+                    LoopCondition loopCond = loopf(lSymTbl);
+
+                    // Create local var
+                    Var var;
+                    var.type = Var::Type::INTEGER;
+                    var.id = intTbl.size();
+                    intTbl.push_back(0);
+
+                    // Fill local symbol table
+                    lSymTbl[varName] = var;
+
+                    // Do loop
+                    for(Integer i=loopCond.start; ; i+=loopCond.step) {
+                        intTbl[var.id] = i;
+                        proc(lSymTbl);
+
+                        if(i == loopCond.end)
+                            break;
+                    }
+                };
+            };
+        }
+
+        LoopConditionFunc solve_ellipsis_exp(RightValueFunc startf, RightValueFunc secf, RightValueFunc endf) {
+            return [startf, secf, endf](SymbolTable lSymTbl) {
+                RightValue start = startf(lSymTbl);
+                RightValue sec = secf(lSymTbl);
+                RightValue end = endf(lSymTbl);
+
+                if(
+                    start.type!=RightValue::Type::INTEGER
+                    || sec.type!=RightValue::Type::INTEGER
+                    || end.type!=RightValue::Type::INTEGER
+                    )
+                    throw "Can only use Integer for ellipsis-exp";
+                
+                LoopCondition res;
+                res.start = start.intValue;
+                res.step = sec.intValue - start.intValue;
+                res.end = end.intValue;
+                return res;
+            };
+        }
+
         LeftValueFunc solve_left_exp_var(string& varName) {
             return [varName](SymbolTable lSymTbl) {
                 LeftValue res;
@@ -220,7 +268,7 @@ namespace rtex {
         }
 
         RightValueFunc solve_right_exp_op(RightValueFunc af, RightValueFunc bf, string& op) {
-            return [af, bf, &op, this](SymbolTable lSymTbl) {
+            return [af, bf, op, this](SymbolTable lSymTbl) {
                 RightValue a = af(lSymTbl);
                 RightValue b = bf(lSymTbl);
                 RightValue c;
