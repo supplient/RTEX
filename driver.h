@@ -42,12 +42,14 @@ namespace rtex {
         Scanner m_scanner;
 
     public:
-        Driver ();
+        Driver(istream& in, ostream& out, ostream& err);
         int parse();
         void setDebug(bool flag);
         virtual ~Driver ();
 
-        ostream& out = cout;
+        istream& in;
+        ostream& out;
+        ostream& err;
 
         vector<Matrix> matTbl;
         vector<Real> realTbl;
@@ -74,7 +76,7 @@ namespace rtex {
                     // filter all line changes
                     size_t pos;
                     while((pos = s.find("\n")) != string::npos)
-                        s.replace(pos, 2, " ");
+                        s.replace(pos, 1, " ");
                 }
                 out << s;
                 if(isBlock)
@@ -130,7 +132,7 @@ namespace rtex {
                 ss << "" << rv.realValue;
                 break;
             case RightValue::Type::MATRIX:
-                ss << rv.matValue;
+                ss << "" << rv.matValue;
                 break;
             case RightValue::Type::LIST:
                 ss << "[";
@@ -145,7 +147,8 @@ namespace rtex {
                 throw "Error";
                 break;
             }
-            return ss.str();
+            string res = ss.str();
+            return res;
         }
 
         Procedure solve_type_phase(string& typeName, string& varName, vector<RightValueFunc> dimFuncs={}) {

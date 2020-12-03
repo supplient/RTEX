@@ -2,6 +2,19 @@
     "tasks": [
         {
             "type": "shell",
+            "label": "Build Filter",
+            "command": "flex",
+            "args": [
+                "--debug",
+                "filter.l"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
             "label": "Build Lex",
             "command": "flex",
             "args": [
@@ -32,12 +45,13 @@
             "command": "g++",
             "args": [
                 "-g",
-                "lex.yy.cc",
+                "lex.rtex.cc",
                 "parser.tab.c",
                 "driver.cpp",
                 "main.cpp",
                 "basic_type.cpp",
                 "type.cpp",
+                "lex.rtexFilter.cc",
                 "-o",
                 "./output/rtex"
             ],
@@ -55,6 +69,7 @@
             },
             "problemMatcher": [],
             "dependsOn": [
+                "Build Filter",
                 "Build Lex",
                 "Build Bison",
                 "Compile"

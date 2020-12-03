@@ -16,12 +16,17 @@
 	#define yywrap() 1
 
 	using namespace std;
+
+	/*替换默认的get_next_token定义*/
+	#undef YY_DECL
+	#define YY_DECL rtex::Parser::symbol_type rtex::Scanner::get_next_token()
 %}
 
 %option c++
 %option noyywrap debug
 /*使用Scanner::yylex()*/
 %option yyclass="Scanner"
+%option prefix="rtex"
 
 DIGIT [0-9]
 ALPHA [a-z]|[A-Z]
@@ -87,7 +92,7 @@ cos {
 
 [ ]+ 	  loc.step();/* Eat Blanks */
 
-<<EOF>>   return yyterminate();
+<<EOF>> 	return yyterminate();
 
 .	{
 	throw rtex::Parser::syntax_error(loc, "invalid character: " + string(yytext));

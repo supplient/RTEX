@@ -4,12 +4,14 @@
 #include <iostream>
 using namespace rtex;
 using namespace std;
-Driver::Driver():m_scanner(*this),m_parser(m_scanner,*this){
-    m_parser.set_debug_stream(cerr);
+Driver::Driver(istream& in, ostream& out, ostream& err)
+    : in(in), out(out), err(err), m_scanner(*this),m_parser(m_scanner,*this)
+{
+    m_parser.set_debug_stream(err);
 }
 
 int Driver::parse() {
-    m_scanner.switch_streams(cin,cout);
+    m_scanner.switch_streams(in, out);
     int r;
     try {
         r = m_parser.parse();
@@ -32,7 +34,6 @@ void Driver::setDebug(bool flag) {
 }
 
 Driver::~Driver(){
- 
 }
 
 namespace rtex {

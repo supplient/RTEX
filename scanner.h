@@ -1,14 +1,11 @@
 #ifndef SCANNER_HH
 #define SCANNER_HH
-/*重要*/
-#if ! defined(yyFlexLexerOnce)
-#undef yyFlexLexer
-#define yyFlexLexer yyFlexLexer  //根据prefix修改
-#include <FlexLexer.h>
+
+#if !defined(yyFlexLexer)
+  #define SCANNER_FLEX
+  #define yyFlexLexer rtexFlexLexer  //根据prefix修改
+  #include <FlexLexer.h>
 #endif
-/*替换默认的get_next_token定义*/
-#undef YY_DECL
-#define YY_DECL rtex::Parser::symbol_type rtex::Scanner::get_next_token()
  
 #include "parser.tab.h"
 namespace rtex {
@@ -26,6 +23,5 @@ namespace rtex {
     virtual ~Scanner (){}
   };
 } /* rtex */
- 
  
 #endif
