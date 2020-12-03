@@ -1,5 +1,9 @@
+@@
 let Matrix M_{10, 20};
 M_{i,j}=2*i+cos(j) #where i=0,1...9 #where j=0,1...19;
+@@
+
+@@@
 let Matrix G_{10};
 G=M*(M^T);
 
@@ -22,6 +26,9 @@ M_{i,j} = (
 
 M;
 
+@@@
+@@@
+
 
 let Matrix C_{2};
 C = [(2,2)
@@ -33,3 +40,4 @@ let Real s;
 s = \sum_{i=0}^{1} \sum_{j=0}^{1} C_{i, j};
 
 s;
+@@@

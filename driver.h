@@ -2,6 +2,7 @@
 #define DRIVER_HH
 
 #include <iostream>
+#include <sstream>
 
 #include "util.h"
 #include "type.h"
@@ -47,7 +48,6 @@ namespace rtex {
         virtual ~Driver ();
 
         ostream& out = cout;
-        bool outputMarkdown = true;
 
         vector<Matrix> matTbl;
         vector<Real> realTbl;
@@ -61,6 +61,30 @@ namespace rtex {
             else if(gSymTbl.find(varName) != gSymTbl.end())
                 return gSymTbl[varName];
             throw "Undefined identifier";
+        }
+
+        void print_paragraph(vector<string> statements, bool isBlock) {
+            if(isBlock)
+                out << "$$" << endl;
+            else
+                out << "$";
+
+            for(auto& s: statements) {
+                if(!isBlock) {
+                    // filter all line changes
+                    size_t pos;
+                    while((pos = s.find("\n")) != string::npos)
+                        s.replace(pos, 2, " ");
+                }
+                out << s;
+                if(isBlock)
+                    out << " \\\\" << endl;
+            }
+
+            if(isBlock)
+                out << "$$" << endl;
+            else
+                out << "$";
         }
 
         void solve_statement(vector<Phase> phases) {
@@ -93,33 +117,35 @@ namespace rtex {
                 prods[i]({});
         }
 
-        void solve_statement_print(RightValueFunc rf) {
+        string solve_statement_print(RightValueFunc rf) {
             RightValue rv = rf({});
+            ostringstream ss;
+
             switch (rv.type)
             {
             case RightValue::Type::INTEGER:
-                out << "$" << rv.intValue << "$";
+                ss << "" << rv.intValue;
                 break;
             case RightValue::Type::REAL:
-                out << "$" << rv.realValue << "$";
+                ss << "" << rv.realValue;
                 break;
             case RightValue::Type::MATRIX:
-                out << "$$" << rv.matValue << "$$";
+                ss << rv.matValue;
                 break;
             case RightValue::Type::LIST:
-                out << "$[";
+                ss << "[";
                 for(int i=0; i<rv.listValue.size(); i++) {
-                    out << rv.listValue[i];
+                    ss << "" << rv.listValue[i];
                     if(i != rv.listValue.size()-1)
-                        out << ",";
+                        ss << ",";
                 }
-                out << "]$";
+                ss << "]";
                 break;
             default:
                 throw "Error";
                 break;
             }
-            out << endl << endl;
+            return ss.str();
         }
 
         Procedure solve_type_phase(string& typeName, string& varName, vector<RightValueFunc> dimFuncs={}) {

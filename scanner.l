@@ -35,6 +35,9 @@ ALPHA [a-z]|[A-Z]
 
 \n+		loc.lines(yyleng); loc.step();
 
+@@@		return rtex::Parser::make_BLOCK_PARAGRAPH_MARK(loc);
+@@		return rtex::Parser::make_INLINE_PARAGRAPH_MARK(loc);
+
 \_		return rtex::Parser::make_UNDERSCORE(loc);
 \{		return rtex::Parser::make_LEFT_BRACE(loc);
 \}		return rtex::Parser::make_RIGHT_BRACE(loc);

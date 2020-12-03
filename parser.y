@@ -59,6 +59,9 @@
 %token CARET                "^"
 %token WELL                 "#"
 
+%token BLOCK_PARAGRAPH_MARK      "@@@"
+%token INLINE_PARAGRAPH_MARK     "@@"
+
 %token EOF 0
 %token LINE_CHANGE LET SUM ELLIPSIS IF ELSE WHERE
 %token <string> TYPE
@@ -74,6 +77,8 @@
 // %type <NumberList> subscript-dim
 // %type <Var&> var-expression
 
+%type <vector<string>> statements
+%type <string> statement
 %type <Bag<vector<Phase>>> phases
 %type <Bag<Phase>> phase
 %type <Bag<Procedure>> type_phase
@@ -99,23 +104,52 @@
 %type <Bag<BoolFunc>> bool_exp
  
  
-%start statements
+%start program
  
 %%
+program: paragraphs
+;
+
+paragraphs: paragraph paragraphs
+| paragraph
+;
+
+paragraph:  block_paragraph
+| inline_paragraph
+;
+
+block_paragraph: "@@@" statements "@@@"
+{
+    driver.print_paragraph($2, true);
+}
+;
+
+inline_paragraph: "@@" statements "@@"
+{
+    driver.print_paragraph($2, false);
+}
+;
+
 statements: statement ";" statements
+{
+    $$ = $3;
+    $$.insert($$.begin(), $1);
+}
 | statement ";"
+{
+    $$ = {$1};
+}
 ;
 
 statement: phases
 {
-    if(driver.outputMarkdown)
-        driver.out << "$$" << $1.s << "$$" << endl << endl;
+    $$ = $1.s;
 
     driver.solve_statement($1.v);
 }
 | right_exp
 {
-    driver.solve_statement_print($1.v);
+    $$ = driver.solve_statement_print($1.v);
 }
 ;
 
