@@ -1,14 +1,21 @@
-@@
+Let us have a matrix at first:
+
+@@@
 let Matrix M_{10, 20};
-M_{i,j}=2*i+cos(j) #where i=0,1...9 #where j=0,1...19;
-@@
+@@@
+
+And not forget to init it:@@ M_{i,j}=2*i+cos(j) #where i=0,1...9 #where j=0,1...19;@@
+
+Then have another matrix, and get its value by calculate with $M$:
 
 @@@
 let Matrix G_{10};
 G=M*(M^T);
+@@@
 
-G;
+Finally take a look for its value: $G=$@@G;@@
 
+@@@
 let Real k;
 k = M_{0, 1};
 let Real c;
