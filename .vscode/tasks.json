@@ -81,7 +81,7 @@
             "label": "Run: Use testfile",
             "command": "./output/rtex",
             "args": [
-                "<testfile.txt",
+                "<./test/testfile.md",
                 "2>debug.txt"
             ],
             "options": {
@@ -95,7 +95,7 @@
             "command": "./output/rtex",
             "args": [
                 "-d",
-                "<testfile.txt",
+                "<./test/testfile.md",
                 ">./output/output.md",
                 "2>debug.txt"
             ],
