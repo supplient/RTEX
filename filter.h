@@ -36,6 +36,10 @@ namespace rtex {
         virtual int yylex();
         virtual ~Filter(){}
 
+        void solve_clear() {
+            driver.clear();
+        }
+
         void solve_block() {
             if(isBlock) {
                 isBlock = false;
@@ -65,6 +69,13 @@ namespace rtex {
                 ss << yytext;
             else
                 out << yytext;
+        }
+
+        void solve_trans() {
+            if(isInline || isBlock)
+                ss << yytext + 1;
+            else
+                out << yytext + 1;
         }
     };
 } /* rtex */

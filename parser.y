@@ -71,12 +71,6 @@
 %token <int> INTEGER
 %token <string> IDENTIFIER
 
-// %type <Number> number-expression
-// %type <Var> one-character-var
-// %type <NumberList> number-sequence
-// %type <NumberList> subscript-dim
-// %type <Var&> var-expression
-
 %type <vector<string>> statements
 %type <string> statement
 %type <Bag<vector<Phase>>> phases

@@ -28,6 +28,25 @@
 %%
 %{
 %}
+\\@@##@@ {
+	Filter* x = dynamic_cast<Filter*>(this);
+	x->solve_trans();
+}
+
+@@##@@ {
+	Filter* x = dynamic_cast<Filter*>(this);
+	x->solve_clear();
+}
+
+\\@@@ {
+	Filter* x = dynamic_cast<Filter*>(this);
+	x->solve_trans();
+}
+
+\\@@ {
+	Filter* x = dynamic_cast<Filter*>(this);
+	x->solve_trans();
+}
 
 @@@ {
 	Filter* x = dynamic_cast<Filter*>(this);

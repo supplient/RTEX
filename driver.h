@@ -57,6 +57,13 @@ namespace rtex {
 
         SymbolTable gSymTbl;
 
+        void clear() {
+            matTbl.clear();
+            realTbl.clear();
+            intTbl.clear();
+            gSymTbl.clear();
+        }
+
         Var searchVar(string& varName, SymbolTable& lSymTbl) {
             if(lSymTbl.find(varName) != lSymTbl.end())
                 return lSymTbl[varName];
