@@ -1,7 +1,7 @@
 rtex(Runnable TEX)
 * 解释型强类型脚本语言
-* 基于[flex](https://github.com/westes/flex/)和[bison](https://www.gnu.org/software/bison/)实现
-* [repo](https://github.com/supplient/MyBisonCompiler)
+* 基于flex(https://github.com/westes/flex/)和bison(https://www.gnu.org/software/bison/)实现
+* repo: https://github.com/supplient/MyBisonCompiler
 * Author: 赵智源 ZY2006166
 
 # 一、什么情况下会想要使用rtex？
@@ -74,7 +74,7 @@ rtex让小赵非常满意，以后他只需要修改一次就可以完成作业�
 @@##@@
 
 # 二、rtex是什么？
-rtex是对[mdmath](https://marketplace.visualstudio.com/items?itemName=goessner.mdmath)的一个拓展，而mdmath是对markdown的一个拓展。
+rtex是对mdmath(https://marketplace.visualstudio.com/items?itemName=goessner.mdmath)的一个拓展，而mdmath是对markdown的一个拓展。
 
 mdmath使得可以直接在markdown中插入latex段落，它会在生成html文件时自动处理这些latex段落，例如\$M_{2,3}\$，经过mdmath会被转换为$M_{2,3}$。
 
@@ -347,7 +347,7 @@ rtex的变量都是静态束定的，即rtex变量一经声明，其类型就确
 
 
 # 八、样例
-最直接的样例就是这份文档，没错，这份文档就是“含rtex段落的markdown”。它的源码在[这里](https://github.com/supplient/MyBisonCompiler/blob/master/test/testfile.md)，经过rtex解释器后生成的“含latex段落的markdown”在[这里](https://github.com/supplient/MyBisonCompiler/blob/master/output/output.md)，再经过mdmath（不是我写的）后生成的pdf文件就是你所见的这份文档。
+最直接的样例就是这份文档，没错，这份文档就是“含rtex段落的markdown”。它的源码在(https://github.com/supplient/MyBisonCompiler/blob/master/test/testfile.md)，经过rtex解释器后生成的“含latex段落的markdown”在(https://github.com/supplient/MyBisonCompiler/blob/master/output/output.md)，再经过mdmath（不是我写的）后生成的html文件（打印后的pdf文件）就是你所见的这份文档。
 
 这里我们做个简单的数据处理作为演示。源码此处不列出，请参见上面链接指向的文档。
 
