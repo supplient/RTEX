@@ -8,4 +8,4 @@ location.hh
 position.hh
 stack.hh
 debug.txt
-/output
+output/rtex
