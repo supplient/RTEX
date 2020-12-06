@@ -364,8 +364,41 @@ rtex的变量都是静态束定的，即rtex变量一经声明，其类型就确
 # 八、样例
 最直接的样例就是这份文档，没错，这份文档就是“含rtex段落的markdown”。它的源码在(https://github.com/supplient/MyBisonCompiler/blob/master/test/testfile.md)，经过rtex解释器后生成的“含latex段落的markdown”在(https://github.com/supplient/MyBisonCompiler/blob/master/output/output.md)，再经过mdmath（不是我写的）后生成的html文件（打印后的pdf文件）就是你所见的这份文档。
 
-这里我们做个简单的数据处理作为演示。源码此处不列出，请参见上面链接指向的文档。
+这里我们做个简单的数据处理作为演示。
 
+## 1. 源码
+```markdown
+@@##@@
+
+首先我们有@@ let Matrix M_{10, 10}; @@，它满足@@ M_{i, j} = cos(j+i*10) #where i=0,1...9 #where j=0,1...9; @@。
+
+然后我们想对矩阵$M$做一个过滤，让所有负项都归零，所有正项都倍增，也就是
+
+@@@
+    M_{i,j} = (
+        0, if M_{i,j}<0 #
+        2 * M_{i,j}, else
+    )
+    #where i=0,1...9
+    #where j=0,1...9
+    ;
+@@@
+
+经过过滤后,
+
+$M=$@@M;@@
+
+最后我们想得到M的第0行和第3列的内积，也就是
+
+@@@
+    let Real s;
+    s = \sum_{i=0}^{9} M_{0,i}*M_{i,3};
+@@@
+
+得到结果$s=$@@s;@@。
+```
+
+## 2. 结果
 
 
 首先我们有$Matrix \quad M_{10 \times 10}$，它满足$M_{i,j} = cos(j+i*10) \quad i = 0,1...9 \quad j = 0,1...9$。
