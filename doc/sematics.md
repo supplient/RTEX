@@ -14,8 +14,9 @@
 | 字符串域 | String | CharList |
 | 字符串列表域 | StrList | Integer -> String |
 | 语段列表域 | PhaseList | Integer -> Phase |
-| 列表值域 | ListValue | Integer + Real + Character + Bool + String + Phase |
-| 列表域 | List | IntList + RealList + CharList + BoolList + StrList + PhaseList |
+| 右值函数列表域 | RightValueFuncList | Integer -> RightValueFunc |
+| 列表值域 | ListValue | Integer + Real + Character + Bool + String + Phase + RightValueFunc |
+| 列表域 | List | IntList + RealList + CharList + BoolList + StrList + PhaseList + RightValueFuncList|
 | ---  | --- | --- |
 | 变量类型域 | Type | {"Integer", "Real", "Matrix"} |
 | 变量地址域 | Location | Integer |
@@ -40,12 +41,14 @@
 | 布尔函数 | BoolFunc | ExecContext -> Bool |
 | 循环条件函数 | LoopConditionFunc | ExecContent -> LoopCondition |
 | 语段 | Phase | Procedure + FuncForFunc |
+| 条件函数对 | IfPair | RightValueFunc X BoolFunc |
 
 # 辅助函数
 部分函数在此处只列出而不做定义。
 
 | 名字 | 映射 | 含义 |
 | --- | --- | --- |
+| ListEmpty | ->List | 返回一个空列表 |
 | ListInit | ListValue->List | 返回一个仅将输入作为元素的列表 |
 | ListIsEmpty | List->Bool | 若列表为空返回True，否则返回False|
 | ListHead | List->ListValue | 返回列表的第一个元素 |
@@ -53,6 +56,7 @@
 | ListTail | List->ListValue | 返回列表的最后一个元素 |
 | ListNoTail | List->List | 返回列表除最后一个元素以外剩下的部分 |
 | ListPushHead | ListValue X List -> List | 在函数头插入一个元素|
+| ListPushTail | ListValue X List -> List | 在函数尾插入一个元素|
 | ToString | RightValue -> String | 将右值转换成格式正确的字符串|
 | ToMatrixString | Integer X Integer X StrList -> String | 把一组字符串排版成矩阵的形式 |
 | ListToMatrix | Integer X Integer X RealList -> Matrix | 将一个实数列表转换成矩阵 |
@@ -168,15 +172,15 @@ change_var(var Var, newValue, execCtx) =
 
 print_paragraph: Out X StrList X Bool -> PrintContext
 * print_paragraph(out, strList, flag) = 
-    let loop_print(out, strList, flag) = 
-        if ListIsEmpty(strList) then out
+    let loop_print(strList, flag) = 
+        if ListIsEmpty(strList) then ""
         else 
-            out + ListHead(strList)
+           ListHead(strList)
             + if flag then "\n" else " "
             + loop_print(out, ListNoHead(strList), flag)
         in
     (out + if flag then "$$\n" else "$"
-        + loop_print(out, strList, flag)
+        + loop_print(strList, flag)
         + if flag then "$$\n" else "$"
     , flag)
 ```
@@ -422,131 +426,152 @@ right_exp: -> RightValueFunc X String
     )
 
 list_exp: -> RightValueFunc
-* exec["[" "(" INTEGER "," INTEGER ")" right_exp_list "]"] =
+* exec["[" "(" ROW_INT "," COL_INT ")" right_exp_list "]"] =
+    let (rf_list, s_list) = exec[right_exp_list] in
+    let f = λ execCtx.
+        let loop_cal_rv(rf_list) =
+            if ListIsEmpty(rf_list) then
+                ListEmpty()
+            else
+                ListPushHead(
+                    ListHead(rf_list)(execCtx), 
+                    ListNoHead(rf_list)
+                )
+        in
+        let rv_list = loop_cal_rv(rf_list) in
+        ListToMatrix(ROW_INT, COL_INT, rv_list)
+    in
+    let s = ToMatrixString(ROW_INT, COL_INT, s_list) in
+    (f, s)
+
+right_exp_list: -> RightValueFuncList
+* exec[right_exp "," right_exp_list] = 
+    let (rf, s) = exec[right_exp] in
+    let (rf_list, s_list) = exec[right_exp_list] in
+    (
+        ListPushHead(rf, rf_list),
+        ListPushHead(s, s_list)
+    )
+* exec[right_exp] =
+    let (rf, s) = exec[right_exp] in
+    (
+        ListInit(rf),
+        ListInit(s)
+    )
+
+sum_exp: -> RightValueFunc
+* exec[SUM subscript_cond superscript_cond right_exp] =
+    let loop_sum(start, end, execCtx, rf) = 
+        let 
+            execCtx' = change_var(IDENTIFIER, start, execCtx)
+        in
+        if start==end then execCtx
+        else 
+            rf(execCtx') + loop_sum(start+1, end, execCtx, rf)
+    in
+    let (rf, rs) = exec[right_exp] in
+    let (id, startF, subS) = exec[subscript_cond] in
+    let (endF, superS) = exec[superscript_cond] in
+    let f = λ execCtx.
+        let start = startF(execCtx) in
+        let end = endF(execCtx) in
+        let execCtx' = make_var("Integer", id, execCtx) in
+        loop_sum(start, end, execCtx', rf)
+    in
+    let s = "\\sum" + subS + superS + " " + rs in
+    (f, s)
+
+subscript_cond: -> String X RightValueFunc X String
+* exec["_" "{" IDENTIFIER "=" right_exp "}"] =
+    let (rf, s) = exec[right_exp] in
+    (
+        (IDENTIFER, rf),
+        "_{" + IDENTIFIER + "=" + s + "}"
+    )
+
+superscript_cond: -> RightValueFunc X String
+* exec["^" "{" right_exp "}"] =
+    let (rf, s) = exec[right_exp] in
+    (
+        rf,
+        "^{" + s + "}"
+    )
+
+if_exp: -> RightValueFunc X String
+* exec[if_exp_phases] =
+    let (ifPairList, sList) = exec[if_exp_phases] in
+    let f = λ execCtx.
+        let loopCheck(ifPairList) =
+            if ListIsEmpty(ifPairList) then
+                fail
+            else
+                let (headBoolF, headRightF) = ListHead(ifPairList) in
+                if headBoolF(execCtx) then
+                    headRightF(execCtx)
+                else
+                    loopCheck(ListNoHead(ifPairList))
+        in
+        loopCheck(ifPairList)
+    in
     let 
-{
-    $$.s = "\
-\\left[\n\
-\\begin{matrix}\n";
-
-    for(int i=0; i<$3; i++) {
-        for(int j=0; j<$5; j++) {
-            int li = i*$3 + j;
-            $$.s += "\t" + $7.s[li];
-            if(j != $5-1)
-                $$.s += " & ";
-        }
-        if(i != $3-1)
-            $$.s += " \\\\\n";
-    }
-
-    $$.s += "\n\
-\\end{matrix}\n\
-\\right]";
+        s = StringListJoin(sList, " \n")
+    in
+    (f, s)
 
 
-    $$.v = driver.solve_list_exp_mat($3, $5, $7.v);
-}
-;
+if_exp_phases: -> IfPairList X StringList
+* exec[if_exp_phase "#" if_exp_phases] =
+    let (ifPair, s) = exec[if_exp_phase] in
+    let (ifPairList, sList) = exec[if_exp_phases] in
+    (
+        ListHead(ifPair, ifPairList),
+        ListHead(s, sList)
+    )
+* exec[if_exp_phase] =
+    let (ifPair, s) = exec[if_exp_phase] in
+    (
+        ListInit(ifPair),
+        ListInit(s)
+    )
 
-right_exp_list: right_exp "," right_exp_list
-{
-    $$.s = $3.s;
-    $$.s.insert($$.s.begin(), $1.s);
+if_exp_phase: -> Ifpair X String
+* exec[right_exp "," IF bool_exp] =
+    let (rf, rs) = exec[right_exp] in
+    let (bf, bs) = exec[bool_exp] in
+    (
+        (rf, bf),
+        rs + "&, if " bs
+    )
+* exec[right_exp "," ELSE] =
+    let (rf, rs) = exec[right_exp] in
+    (
+        (rf, λ execCtx. True),
+        rs + "&, else"
+    )
 
-    $$.v = $3.v;
-    $$.v.insert($$.v.begin(), $1.v);
-}
-| right_exp
-{
-    $$.s = {$1.s};
+bool_exp: -> BoolFunc
+* exec[right_exp1 OPERATOR right_exp2] =
+    let (rf1, rs1) = exec[right_exp1] in
+    let (rf2, rs2) = exec[right_exp2] in
+    let f = λ execCtx.
+        OperatorCalculate(
+            OPERATOR,
+            rf1(execCtx),
+            rf2(execCtx),
+        )
+    in
+    (
+        f,
+        rs1 + OPERATOR + rs2
+    )
 
-    $$.v = {$1.v};
-}
-;
-
-sum_exp: SUM subscript_cond superscript_cond right_exp
-{
-    $$.s = "\\sum" + $2.s + $3.s + " " + $4.s;
-
-    $$.v = driver.solve_sum_exp($2.v, $3.v, $4.v);
-}
-;
-
-subscript_cond: "_" "{" IDENTIFIER "=" right_exp "}"
-{
-    $$.s = "_{" + $3 + "=" + $5.s + "}";
-
-    $$.v = driver.solve_subscript_cond($3, $5.v);
-}
-;
-
-superscript_cond: "^" "{" right_exp "}"
-{
-    $$.s = "^{" + $3.s + "}";
-
-    $$.v = $3.v;
-}
-;
-
-if_exp: if_exp_phases
-{
-    $$.s = "\
-\\left\\{\n\
-\\begin{aligned}\n";
-    $$.s += Util::join($1.s, " \\\\\n", "\t");
-    $$.s += "\n\
-\\end{aligned}\n\
-\\right.";
-
-    $$.v = driver.solve_if_exp($1.v);
-}
-;
-
-if_exp_phases: if_exp_phase "#" if_exp_phases
-{
-    $$.s = $3.s;
-    $$.s.insert($$.s.begin(), $1.s);
-
-    $$.v = $3.v;
-    $$.v.insert($$.v.begin(), $1.v);
-}
-| if_exp_phase
-{
-    $$.s = {$1.s};
-
-    $$.v = {$1.v};
-}
-;
-
-if_exp_phase: right_exp "," IF bool_exp
-{
-    $$.s = $1.s + "&, if " + $4.s;
-
-    $$.v = driver.solve_if_exp_phase_if($1.v, $4.v);
-}
-| right_exp "," ELSE
-{
-    $$.s = $1.s + "&, else";
-
-    $$.v = driver.solve_if_exp_phase_else($1.v);
-}
-;
-
-bool_exp: right_exp OPERATOR right_exp
-{
-    $$.s = $1.s + $2 + $3.s;
-
-    $$.v = driver.solve_bool_exp($1.v, $3.v, $2);
-}
-;
-
-subscript_dim: "_" "{" right_exp_list "}"
-{
-    $$.s = $3.s;
-
-    $$.v = $3.v;
-}
-;
+subscript_dim: -> RightValueFunc X RightValueFunc X Strig
+* exec["_" "{" right_exp1 "," right_exp2 "}"] =
+    let (rf1, rs1) = exec[right_exp1] in
+    let (rf2, rs2) = exec[right_exp2] in
+    (
+        (rf1, rf2),
+        "_{" + rs1 + "," + rs2 + "}"
+    )
 
 ```
